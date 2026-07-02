@@ -1,157 +1,66 @@
-# Demand Forecasting & Inventory Optimization
+# Inventory Demand Analysis
 
-A retail analytics project that turns historical sales into smarter inventory decisions: better forecasts, leaner stock, and stronger business outcomes.
+A local demand analysis project using a retail inventory dataset. The goal is to explore sales behavior, promotions, and demand patterns for a small set of stores and products.
 
-> **Status:** 🚀 Active — core model logic is in place and results are ready to be documented.
-
----
-
-## 🌟 Why this matters
-
-Retail inventory is a high-stakes balancing act:
-
-- **Too much stock** ties up cash, increases storage cost, and risks waste.
-- **Too little stock** causes stock-outs, lost revenue, and unhappy customers.
-
-This project solves that by forecasting demand and turning those forecasts into clear stock recommendations.
+> **Status:** ✅ Data is loaded and initial analysis is ready. The notebook and script support further exploration.
 
 ---
 
-## 🎯 What this project delivers
+## 📌 Overview
 
-- Accurate weekly demand forecasts from historical retail sales
-- Inventory optimization recommendations based on forecast + safety stock
-- Visual comparisons against a baseline stocking strategy
-- Metrics that show business value, not just model accuracy
+This repository analyzes retail demand data from multiple stores and products. It is designed to help you:
 
----
-
-## 📦 Project summary
-
-This repository demonstrates how to:
-
-1. Prepare retail sales data for forecasting.
-2. Build and evaluate a demand forecasting model.
-3. Calculate recommended inventory levels.
-4. Compare optimized inventory against business-as-usual.
-
-The goal is simple: **reduce excess stock while maintaining service levels**.
+- understand how price and promotions relate to demand
+- explore demand patterns across stores and products
+- build a foundation for forecasting or inventory optimization
 
 ---
 
-## 📊 Key results to highlight
+## 📦 Dataset
 
-Once complete, these are the most important numbers readers should see:
-
-- Forecast accuracy (e.g. MAPE, WMAE)
-- Average inventory before vs after optimization
-- Stock reduction percentage
-- Stock-out or service-level change
-
-A strong story is:
-
-> Better forecasts → smarter stock levels → lower inventory cost with the same or better availability.
-
----
-
-## 🧠 Data & approach
-
-**Dataset:** Walmart Sales Forecast dataset from Kaggle
-
-**What it includes:**
-
-- Weekly sales per store and department
-- Date, store, department IDs
-- Holiday indicators
-- External signals: temperature, fuel price, CPI, unemployment, markdowns
-
-**Approach:**
-
-- Clean and prepare the data
-- Train a forecasting model (Azure ML / AutoML)
-- Measure accuracy with business-friendly metrics
-- Compute recommended stock using forecast + safety stock
-- Compare results with a baseline inventory strategy
+- **File:** `data/inventory_demand_forecasting_dataset.csv`
+- **Rows:** 4,380
+- **Columns:** 6
+- **Fields:**
+  - `date` — sale date
+  - `store_id` — store identifier
+  - `product_id` — product identifier
+  - `price` — product price
+  - `promotion` — promotion flag (0/1)
+  - `demand` — units sold
 
 ---
 
-## 🛠️ Tools used
+## 🛠️ What is included
 
-| Tool | Purpose |
-|------|---------|
-| Azure Machine Learning | Train and manage forecasting experiments |
-| Azure AutoML | Automated model selection and tuning |
-| Power BI | Visualize forecasts and inventory outcomes |
-| Excel | Analyze safety stock and business impact |
-| GitHub | Version control and documentation |
+- `data/` — dataset file
+- `notebooks/data_analysis_starter.ipynb` — starter notebook for exploration
+- `analyze_data.py` — initial summary script
+- `README.md` — project overview
 
 ---
 
-## 📈 Recommended visuals
+## 🔍 What to explore next
 
-To make the story easy to understand, include charts such as:
-
-- Forecast vs actual sales over time
-- Baseline inventory vs optimized inventory
-- Forecast error distribution
-- Inventory reduction impact
-
-If possible, add illustrations or screenshot files under `results/` and reference them here.
+1. Convert `date` to datetime and inspect seasonality.
+2. Compare demand across stores and products.
+3. Measure how promotions affect demand.
+4. Build visualizations for price, demand, and promotion relationships.
+5. Use the notebook to test forecasting or inventory optimization ideas.
 
 ---
 
-## 📁 Repository structure
+## 🚀 How to use
 
-```text
-.
-├── data/            # raw and processed datasets
-├── notebooks/       # model training and analysis
-├── results/         # charts, dashboards, and summary tables
-├── docs/            # reports and presentation materials
-├── PROJECT_PLAN.md  # one-month local RAG project plan
-└── README.md        # project overview
-```
-
----
-
-## 🚀 How to run
-
-1. Download the Walmart Sales Forecast dataset from Kaggle.
-2. Place the raw files in `data/`.
-3. Open the notebook or Azure ML experiment.
-4. Run data preparation.
-5. Train the demand forecasting model.
-6. Generate metrics and inventory recommendations.
-
----
-
-## 📘 Project plan
-
-For a full one-month program plan, see `PROJECT_PLAN.md`. It includes weekly objectives, hands-on exercises, and milestones for building a local offline Q&A assistant with Foundry Local and RAG.
-
----
-
-## ✨ Useful additions
-
-If helpful, add any of these to make the project even clearer:
-
-- A short **project topic summary** for your chosen ML domain
-- Example **results and metrics** once the model is trained
-- Sample **screenshots or charts** under `results/`
-- A short **demo script** or `run` section for the app
-
----
-
-## 👥 Contributors
-
-- **OguzBABA** (Industrial Engineering) — demand definition, data preparation, inventory analysis, business insights
-- **Oğuz** (Computer Engineering) — model training, Azure implementation, technical pipeline
+1. Open `notebooks/data_analysis_starter.ipynb` in Jupyter or VS Code.
+2. Update the dataset filename if needed.
+3. Run the notebook cells to inspect the data and generate charts.
+4. Or run `python analyze_data.py` to print the data summary.
 
 ---
 
 ## 💡 Notes
 
-- Designed for academic and educational use.
-- The README is written so any reader can understand the full project story quickly.
-- Add charts, performance metrics, and business conclusions once model results are finalized.
-- The plan is adaptable to other ML topics, so the curriculum can be reused for a different domain.
+- This project is mostly local and data-driven.
+- The dataset is ready for exploratory analysis and future forecasting work.
+- Add charts, analysis findings, or model experiments to the notebook and `results/` folder.
