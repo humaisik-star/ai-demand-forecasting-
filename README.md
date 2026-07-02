@@ -1,6 +1,6 @@
-# Inventory Demand Analysis
+# DemandStockInsight
 
-A local demand analysis project using a retail inventory dataset. The goal is to explore sales behavior, promotions, and demand patterns for a small set of stores and products.
+A local demand and stock analysis project using a retail inventory dataset. The goal is to explore sales behavior, promotions, demand patterns, and inventory relationships for a small set of stores and products.
 
 > **Status:** ✅ Data is loaded and initial analysis is ready. The notebook and script support further exploration.
 
