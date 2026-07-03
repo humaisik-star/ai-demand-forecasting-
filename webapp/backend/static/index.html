@@ -162,6 +162,13 @@
     .minichart { margin-top: 10px; background: var(--surface-2); border: 1px solid var(--border);
       border-radius: var(--radius-sm); padding: 10px 12px 8px; }
     .minichart .ct { font-size: 11.5px; color: var(--muted); font-weight: 600; margin-bottom: 4px; }
+    .minichart .mc-plot { display: flex; gap: 6px; align-items: stretch; }
+    .minichart .mc-plot svg { flex: 1; }
+    .minichart .mc-y { display: flex; flex-direction: column; justify-content: space-between;
+      font-size: 9.5px; color: var(--muted); text-align: right; min-width: 28px; padding: 1px 0; }
+    .minichart .mc-y .u { opacity: .65; }
+    .minichart .mc-x { display: flex; justify-content: space-between; font-size: 9.5px;
+      color: var(--muted); margin: 3px 0 0 34px; }
     .minichart .lg { display: flex; gap: 14px; font-size: 11px; color: var(--muted); margin-top: 4px; }
     .minichart .lg i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
     /* Composer — pinned to the bottom of the chat column */
@@ -531,8 +538,8 @@
       if (!chart || !chart.series) return "";
       const all = chart.series.flatMap(s => s.values).filter(v => v != null);
       if (!all.length) return "";
-      const W = 300, H = 88, P = 6, n = chart.labels.length;
-      const mn = Math.min(...all), span = (Math.max(...all) - mn) || 1;
+      const W = 300, H = 84, P = 6, n = chart.labels.length;
+      const mn = Math.min(...all), mx = Math.max(...all), span = (mx - mn) || 1;
       const x = k => P + (W - 2 * P) * (n <= 1 ? 0.5 : k / (n - 1));
       const y = v => H - P - (H - 2 * P) * (v - mn) / span;
       const cs = getComputedStyle(document.documentElement);
@@ -542,9 +549,15 @@
         return `<polyline fill="none" stroke="${col[si % 2]}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="${pts}"/>`;
       }).join("");
       const lg = chart.series.map((s, si) => `<span><i style="background:${col[si % 2]}"></i>${esc(s.name)}</span>`).join("");
+      const L = chart.labels;  // x-axis dates (first / middle / last)
+      const xax = n > 2
+        ? `<span>${esc(L[0])}</span><span>${esc(L[Math.floor(n / 2)])}</span><span>${esc(L[n - 1])}</span>`
+        : L.map(l => `<span>${esc(l)}</span>`).join("");
       return `<div class="minichart"><div class="ct">${esc(chart.title || "")}</div>` +
-        `<svg viewBox="0 0 ${W} ${H}" width="100%" height="88" preserveAspectRatio="none">${paths}</svg>` +
-        `<div class="lg">${lg}</div></div>`;
+        `<div class="mc-plot"><div class="mc-y"><span>${Math.round(mx)}</span>` +
+          `<span class="u">adet</span><span>${Math.round(mn)}</span></div>` +
+          `<svg viewBox="0 0 ${W} ${H}" width="100%" height="84" preserveAspectRatio="none">${paths}</svg></div>` +
+        `<div class="mc-x">${xax}</div><div class="lg">${lg}</div></div>`;
     }
 
     const scrollDown = () => chat.scrollTo({ top: chat.scrollHeight, behavior: "smooth" });
