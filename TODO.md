@@ -110,3 +110,9 @@ Projenin mevcut durumu ve sıradaki adımlar. Tamamladıkça `[ ]` → `[x]` yap
 - [x] bilgi_ara tool (hibrit) - kaynak gostererek cevap, yoksa bilmiyorum
 - [x] 10 soruluk eval: %100 dogruluk (rag_eval.py)
 - [x] CI-safe testler (test_rag.py)
+
+## SQLite veri katmani - TAMAM
+- [x] build_db.py: sonuc CSV'lerini db/analysis.db'ye yaz
+- [x] src/datastore.py + webapp/backend/store.py: DB'den oku, yoksa CSV fallback
+- [x] Dashboard API + chatbot tool'lari DB'den okuyor
+- [x] Mevcut CSV akisi korundu (ek katman)

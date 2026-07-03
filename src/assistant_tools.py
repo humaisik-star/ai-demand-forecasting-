@@ -17,6 +17,8 @@ from pathlib import Path
 
 import pandas as pd
 
+from src.datastore import load as _load_table
+
 PRED_PATH = Path("results/predictions.csv")
 STOCK_PATH = Path("results/stock_recommendations.csv")
 INV_PATH = Path("results/inventory_analytics.csv")
@@ -30,46 +32,42 @@ _adv_cache = None
 _anom_cache = None
 
 
+# Loaders read from db/analysis.db when present, otherwise the result CSV.
 def _predictions() -> pd.DataFrame:
     global _pred_cache
     if _pred_cache is None:
-        if not PRED_PATH.exists():
-            raise FileNotFoundError(f"{PRED_PATH} missing. Run predict.py first.")
-        _pred_cache = pd.read_csv(PRED_PATH)
+        _pred_cache = _load_table("predictions", PRED_PATH)
     return _pred_cache
 
 
 def _stock() -> pd.DataFrame:
     global _stock_cache
     if _stock_cache is None:
-        if not STOCK_PATH.exists():
-            raise FileNotFoundError(f"{STOCK_PATH} missing. Run stock.py first.")
-        _stock_cache = pd.read_csv(STOCK_PATH)
+        _stock_cache = _load_table("stock_recommendations", STOCK_PATH)
     return _stock_cache
 
 
 def _inventory() -> pd.DataFrame:
     global _inv_cache
     if _inv_cache is None:
-        if not INV_PATH.exists():
-            raise FileNotFoundError(f"{INV_PATH} missing. Run inventory_analytics.py first.")
-        _inv_cache = pd.read_csv(INV_PATH)
+        _inv_cache = _load_table("inventory_analytics", INV_PATH)
     return _inv_cache
 
 
 def _advanced() -> pd.DataFrame:
     global _adv_cache
     if _adv_cache is None:
-        if not ADV_PATH.exists():
-            raise FileNotFoundError(f"{ADV_PATH} missing. Run advanced_analytics.py first.")
-        _adv_cache = pd.read_csv(ADV_PATH)
+        _adv_cache = _load_table("advanced_analytics", ADV_PATH)
     return _adv_cache
 
 
 def _anomalies() -> pd.DataFrame:
     global _anom_cache
     if _anom_cache is None:
-        _anom_cache = pd.read_csv(ANOM_PATH) if ANOM_PATH.exists() else pd.DataFrame()
+        try:
+            _anom_cache = _load_table("anomalies", ANOM_PATH)
+        except Exception:
+            _anom_cache = pd.DataFrame()
     return _anom_cache
 
 

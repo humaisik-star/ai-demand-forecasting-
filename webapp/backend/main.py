@@ -19,13 +19,16 @@ from pydantic import BaseModel
 
 import pandas as pd
 
+from store import load as _load_table
 from tools import DATA_DIR, TOOL_SPECS, dispatch
 
 STATIC_DIR = Path(__file__).parent / "static"
 
 
 def _csv(name):
-    return pd.read_csv(DATA_DIR / name)
+    """Read an analysis table from analysis.db when present, else the CSV."""
+    table = name[:-4] if name.endswith(".csv") else name
+    return _load_table(table, DATA_DIR / name)
 
 SYSTEM_PROMPT = """You are a demand-planning and inventory assistant for a retail chain.
 Answer by calling the tools — never invent numbers. Store IDs look like S001..S005 and

@@ -9,3 +9,6 @@ __pycache__/
 # Training artifacts (regenerate with train_model.py)
 results/training_log.txt
 .env
+
+# Local analysis DB (rebuild with build_db.py; the webapp bundles its own copy)
+db/

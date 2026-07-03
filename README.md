@@ -233,6 +233,18 @@ stock, reorder point, quantile forecasting, turnover, methodology).
 
 ---
 
+## 🗄️ SQLite data layer
+
+`build_db.py` mirrors the analysis result CSVs (predictions, stock
+recommendations, ABC / ABC-XYZ, anomalies, metrics) into a single **SQLite**
+database (`db/analysis.db`). The dashboard API and the assistant tools read
+through [`src/datastore.py`](src/datastore.py), which **prefers the database and
+falls back to the CSV** when the DB or a table is missing. This is an *additive*
+layer — the scripts still write the CSVs (source of truth), so nothing in the
+existing flow breaks. The web app bundles its own `analysis.db`.
+
+---
+
 ## 📓 Analysis notebook
 
 [`notebooks/data_analysis_starter.ipynb`](notebooks/data_analysis_starter.ipynb) is
@@ -270,6 +282,7 @@ chart and test:
 │   ├── assistant_tools.py # Tools the LLM assistant can call
 │   └── rag.py             # RAG retrieval (chunk, embed, cosine top-K)
 ├── build_kb.py        # Build the RAG vector store (Azure embeddings -> SQLite)
+├── build_db.py        # Mirror result CSVs into db/analysis.db (SQLite)
 ├── rag_eval.py        # 10-question RAG accuracy evaluation
 ├── notebooks/         # Comprehensive analysis notebook (EDA + hypothesis tests)
 ├── results/           # Charts, metrics, predictions, dashboards
