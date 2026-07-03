@@ -215,6 +215,23 @@ questions. The tools are LLM-agnostic and fully testable offline
 
 ---
 
+## 📓 Analysis notebook
+
+[`notebooks/data_analysis_starter.ipynb`](notebooks/data_analysis_starter.ipynb) is
+a fully executed, section-by-section study — Intro, Data, Cleaning, EDA, Hypothesis
+Tests, Modeling, Conclusion — with a markdown *finding + business meaning* under every
+chart and test:
+
+- **Charts**: box plots (category / season / store), correlation heatmap, violin,
+  regression scatter, time-series decomposition, moving averages, ACF/PACF, QQ plot.
+- **Hypothesis tests (scipy)**: promotion effect (t-test & Mann–Whitney), season /
+  category / store differences (ANOVA), price–demand correlation (Pearson & Spearman),
+  normality (Shapiro–Wilk) — each interpreted with its p-value. All tests reject H₀
+  at α=0.05 except where noted, confirming promotion, seasonality and price effects are
+  statistically significant and demand is non-normal.
+
+---
+
 ## 👥 Team
 
 | Name | Role |
@@ -232,7 +249,7 @@ questions. The tools are LLM-agnostic and fully testable offline
 ├── src/
 │   ├── features.py        # Feature engineering (calendar + lag/rolling)
 │   └── assistant_tools.py # Tools the LLM assistant can call
-├── notebooks/         # Exploratory analysis
+├── notebooks/         # Comprehensive analysis notebook (EDA + hypothesis tests)
 ├── results/           # Charts, metrics, predictions, dashboards
 ├── models/            # Trained model + best hyperparameters
 ├── analyze_data.py    # Exploratory data analysis / charts
