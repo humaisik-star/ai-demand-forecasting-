@@ -223,6 +223,26 @@ def list_anomalies(top_n: int = 10) -> dict:
     return {"count": int(len(anom)), "anomalies": anom.head(top_n).to_dict("records")}
 
 
+RAG_MIN_SCORE = 0.30  # below this the query is treated as out-of-knowledge-base
+
+
+def bilgi_ara(query: str, top_k: int = 3) -> dict:
+    """RAG: retrieve knowledge-base chunks for a conceptual question.
+
+    Returns sources+chunks to ground the answer, or found=False when nothing in
+    the knowledge base is relevant (the assistant should then say it doesn't know).
+    """
+    try:
+        from src.rag import search
+
+        hits = search(query, top_k=top_k)
+        if not hits or hits[0]["score"] < RAG_MIN_SCORE:
+            return {"found": False, "note": "Bilgi tabanında bu konuyla ilgili içerik yok."}
+        return {"found": True, "sources": hits}
+    except Exception as e:
+        return {"error": str(e)}
+
+
 def yonetici_ozeti() -> dict:
     """Full data snapshot for an executive summary: KPIs, ABC-XYZ, alerts, anomalies.
 
@@ -267,6 +287,7 @@ _FUNCS = {
     "get_advanced_policy": get_advanced_policy,
     "list_anomalies": list_anomalies,
     "yonetici_ozeti": yonetici_ozeti,
+    "bilgi_ara": bilgi_ara,
 }
 
 TOOL_SPECS = [
@@ -394,6 +415,21 @@ TOOL_SPECS = [
             "name": "yonetici_ozeti",
             "description": "Full snapshot (KPIs, ABC/ABC-XYZ, top alerts, anomalies) to build an executive summary. Call this when the user asks for a yönetici özeti / executive summary.",
             "parameters": {"type": "object", "properties": {}},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "bilgi_ara",
+            "description": "Knowledge-base search (RAG) for CONCEPTUAL questions — what/why/how definitions of methods like ABC, ABC-XYZ, EOQ, newsvendor, safety stock, reorder point, quantile forecasting, turnover, and the project methodology. Use for explanations, NOT for live numbers (use the data tools for those).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string", "description": "the conceptual question"},
+                    "top_k": {"type": "integer", "default": 3},
+                },
+                "required": ["query"],
+            },
         },
     },
 ]

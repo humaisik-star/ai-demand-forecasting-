@@ -213,6 +213,24 @@ run `python assistant.py` for an interactive chat or `--ask "..."` for one-off
 questions. The tools are LLM-agnostic and fully testable offline
 (`python -m src.assistant_tools`).
 
+### 📚 RAG layer (knowledge base)
+
+The assistant is **hybrid**: data questions hit the tools above; **conceptual**
+questions ("EOQ nedir?", "newsvendor nasıl çalışır?") are answered with
+**Retrieval-Augmented Generation** over a knowledge base of IE/inventory concept
+docs ([`knowledge_base/`](knowledge_base/): ABC, ABC-XYZ, EOQ, newsvendor, safety
+stock, reorder point, quantile forecasting, turnover, methodology).
+
+- `build_kb.py` chunks the docs, embeds them with **Azure OpenAI embeddings**
+  (`text-embedding-3-small`) and stores the vectors in **SQLite** (`rag/knowledge.db`).
+- [`src/rag.py`](src/rag.py) retrieves the top-K chunks by **cosine similarity**.
+- The `bilgi_ara` tool feeds those chunks to the LLM, which answers **grounded and
+  cited** (e.g. "(kaynak: 03_eoq.md)"). Below a relevance floor it returns
+  `found=false` and the assistant **says it doesn't know** — no hallucination.
+- `rag_eval.py` scores a 10-question test set (8 concept + 2 out-of-scope):
+  **10/10 = 100%** — every concept answered from the right source, both
+  out-of-scope questions correctly abstained.
+
 ---
 
 ## 📓 Analysis notebook
@@ -246,9 +264,13 @@ chart and test:
 ```
 .
 ├── data/              # Datasets (demand_forecasting.csv, inventory_...csv)
+├── knowledge_base/    # RAG concept docs (ABC, EOQ, newsvendor, ...)
 ├── src/
 │   ├── features.py        # Feature engineering (calendar + lag/rolling)
-│   └── assistant_tools.py # Tools the LLM assistant can call
+│   ├── assistant_tools.py # Tools the LLM assistant can call
+│   └── rag.py             # RAG retrieval (chunk, embed, cosine top-K)
+├── build_kb.py        # Build the RAG vector store (Azure embeddings -> SQLite)
+├── rag_eval.py        # 10-question RAG accuracy evaluation
 ├── notebooks/         # Comprehensive analysis notebook (EDA + hypothesis tests)
 ├── results/           # Charts, metrics, predictions, dashboards
 ├── models/            # Trained model + best hyperparameters

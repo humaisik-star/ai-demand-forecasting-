@@ -1,0 +1,16 @@
+soru,beklenen_kaynak,tools,dogru,cevap
+ABC analizi nedir?,02_abc_analizi.md,bilgi_ara,True,"ABC analizi, ürünleri yıllık ciro katkısına göre önem sırasına dizen bir segmentasyon yöntemidir; Pareto ilkesine göre g"
+EOQ formülü nedir ve ne işe yarar?,03_eoq.md,bilgi_ara,True,"EOQ formülü: EOQ = √(2 · D · S / H)
+
+- D = yıllık talep (adet); S = sipariş başına sabit maliyet; H = birim başına yıllı"
+Güvenlik stoğu nasıl hesaplanır?,04_guvenlik_stogu.md,bilgi_ara,True,"Güvenlik stoğu şu formülle hesaplanır: Güvenlik Stoğu = z × σ_L = z × σ × √(lead time).  
+- z: hedef servis seviyesine k"
+Yeniden sipariş noktası (reorder point) nedir?,05_reorder_point.md,bilgi_ara,True,"Yeniden sipariş noktası (ROP), mevcut stok düzeyi bu eşik altına düştüğünde yeni sipariş verilmesi gerektiğini gösteren "
+Newsvendor modeli ve kritik oran nedir?,06_newsvendor.md,bilgi_ara,True,Newsvendor modeli: Tek dönemlik (bozulabilir/kısa raf ömürlü) ürünler için optimal sipariş miktarını belirleyen modeldir
+Quantile tahmin ve P90 ne anlama gelir?,07_quantile_tahmin.md,bilgi_ara,True,"Quantile (kantil) tahmin: Talebin farklı yüzde noktaları (ör. P10/P50/P90) için ayrı tahminler üreten, böylece bir tahmi"
+ABC-XYZ analizinde XYZ neyi ölçer?,08_abc_xyz.md,bilgi_ara,True,"XYZ, talebin değişkenliğini (öngörülebilirliğini) ölçer — kullanılan metrik CV (standart sapma / ortalama), boyutsuz bir"
+Stok devir hızı nedir?,09_stok_devir_ve_tahmin.md,bilgi_ara,True,"Stok devir hızı, envanterin bir yılda kaç kez satılıp yenilendiğini ölçer:
+
+- Formül: Devir Hızı = Yıllık Talep / Ortala"
+Just-in-time (JIT) envanter sistemi nedir?,(abstain),bilgi_ara,True,Bu konu bilgi tabanımda yok.
+Kanban stok yönetimi nasıl çalışır?,(abstain),bilgi_ara,True,Bu konu bilgi tabanımda yok.

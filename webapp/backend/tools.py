@@ -190,6 +190,22 @@ def list_anomalies(top_n: int = 10) -> dict:
     return {"count": int(len(anom)), "anomalies": anom.head(top_n).to_dict("records")}
 
 
+RAG_MIN_SCORE = 0.30
+
+
+def bilgi_ara(query: str, top_k: int = 3) -> dict:
+    """RAG knowledge-base search for conceptual questions (with relevance floor)."""
+    try:
+        from rag import search
+
+        hits = search(query, top_k=top_k)
+        if not hits or hits[0]["score"] < RAG_MIN_SCORE:
+            return {"found": False, "note": "Bilgi tabanında bu konuyla ilgili içerik yok."}
+        return {"found": True, "sources": hits}
+    except Exception as e:
+        return {"error": str(e)}
+
+
 def yonetici_ozeti() -> dict:
     inv = _inventory()
     stock = _stock()
@@ -226,6 +242,7 @@ _FUNCS = {
     "get_advanced_policy": get_advanced_policy,
     "list_anomalies": list_anomalies,
     "yonetici_ozeti": yonetici_ozeti,
+    "bilgi_ara": bilgi_ara,
 }
 
 TOOL_SPECS = [
@@ -274,6 +291,11 @@ TOOL_SPECS = [
     {"type": "function", "function": {"name": "yonetici_ozeti",
         "description": "Full snapshot (KPIs, ABC/ABC-XYZ, top alerts, anomalies) to build an executive summary. Call when the user asks for a yönetici özeti / executive summary.",
         "parameters": {"type": "object", "properties": {}}}},
+    {"type": "function", "function": {"name": "bilgi_ara",
+        "description": "Knowledge-base search (RAG) for CONCEPTUAL questions — definitions/why/how of ABC, ABC-XYZ, EOQ, newsvendor, safety stock, reorder point, quantile forecasting, turnover, and the project methodology. Use for explanations, NOT for live numbers.",
+        "parameters": {"type": "object", "properties": {
+            "query": {"type": "string"}, "top_k": {"type": "integer", "default": 3}},
+            "required": ["query"]}}},
 ]
 
 

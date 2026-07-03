@@ -102,3 +102,11 @@ Projenin mevcut durumu ve sıradaki adımlar. Tamamladıkça `[ ]` → `[x]` yap
 - [x] Anomali tespiti + aciklama
 - [x] Otomatik Yonetici Ozeti (Azure OpenAI) - executive_summary.py + yonetici_ozeti tool
 - [x] Raporlar sekmesinde ABC-XYZ matrisi + anomaliler
+
+## RAG katmani (programin cekirdegi) - TAMAM
+- [x] Bilgi tabani: 9 kavram dokumani (ABC, EOQ, newsvendor, guvenlik stogu, quantile...)
+- [x] Chunking + Azure OpenAI embeddings (text-embedding-3-small) -> SQLite
+- [x] Retrieval: cosine similarity, top-K (src/rag.py)
+- [x] bilgi_ara tool (hibrit) - kaynak gostererek cevap, yoksa bilmiyorum
+- [x] 10 soruluk eval: %100 dogruluk (rag_eval.py)
+- [x] CI-safe testler (test_rag.py)
