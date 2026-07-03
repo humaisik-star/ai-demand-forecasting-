@@ -96,12 +96,16 @@
     .filters input { flex: 1; min-width: 150px; }
     .tablewrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
     table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    th, td { padding: 10px 12px; text-align: left; white-space: nowrap; }
+    th, td { padding: 11px 14px; text-align: left; white-space: nowrap; vertical-align: middle; }
     thead th { background: var(--surface-2); color: var(--muted); font-weight: 600;
       cursor: pointer; user-select: none; position: sticky; top: 0; }
     tbody tr { border-top: 1px solid var(--border); }
     tbody tr:hover { background: var(--surface-2); }
-    td.num { text-align: right; font-variant-numeric: tabular-nums; }
+    /* Numeric columns: right-align BOTH header and cells so they line up */
+    .num { text-align: right; font-variant-numeric: tabular-nums; }
+    /* Product table: fixed, consistent column widths */
+    #invTable { table-layout: fixed; min-width: 780px; }
+    #invTable th, #invTable td { overflow: hidden; text-overflow: ellipsis; }
     .pill { padding: 2px 9px; border-radius: 20px; font-size: 11.5px; font-weight: 600; }
     .pill.A { background: color-mix(in srgb, var(--a) 22%, transparent); color: var(--a); }
     .pill.B { background: color-mix(in srgb, var(--b) 22%, transparent); color: var(--b); }
@@ -278,6 +282,11 @@
         <select id="fStatus"><option value="">Tüm durumlar</option><option>CRITICAL</option><option>REORDER</option><option>OK</option></select>
       </div>
       <div class="tablewrap"><table id="invTable">
+        <colgroup>
+          <col style="width:12%"><col style="width:12%"><col style="width:8%">
+          <col style="width:15%"><col style="width:11%"><col style="width:11%">
+          <col style="width:11%"><col style="width:8%"><col style="width:12%">
+        </colgroup>
         <thead><tr>
           <th data-k="Store ID">Mağaza</th><th data-k="Product ID">Ürün</th>
           <th data-k="abc_class">ABC</th><th data-k="annual_revenue" class="num">Yıllık ciro</th>
@@ -429,7 +438,8 @@
     function tableHTML(rows) {
       if (!rows.length) return "<tbody><tr><td class='muted' style='padding:14px'>Veri yok</td></tr></tbody>";
       const cols = Object.keys(rows[0]);
-      const head = "<thead><tr>" + cols.map(c => `<th>${c}</th>`).join("") + "</tr></thead>";
+      const numCol = c => typeof rows[0][c] === "number";
+      const head = "<thead><tr>" + cols.map(c => `<th class="${numCol(c) ? "num" : ""}">${c}</th>`).join("") + "</tr></thead>";
       const body = "<tbody>" + rows.map(r => "<tr>" + cols.map(c => {
         const v = r[c]; const num = typeof v === "number";
         return `<td class="${num ? "num" : ""}">${num ? (Number.isInteger(v) ? v : v.toFixed(3)) : v}</td>`;
