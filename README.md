@@ -130,6 +130,9 @@ each pushes a forecast. Top demand drivers: **Price** (by far), product
 trend — and it can explain any single prediction (e.g. "high price −32,
 Furniture +13"). See `results/12_shap_bar.png` and `results/13_shap_beeswarm.png`.
 
+> `explain.py` needs SHAP, which is an **optional** extra (it pulls `numba`, kept
+> out of the pinned `requirements.txt`/CI). Install it when needed: `pip install shap`.
+
 ### 📦 Inventory optimization
 
 Applying the forecast to stock policy at a **95% target service level** with a
