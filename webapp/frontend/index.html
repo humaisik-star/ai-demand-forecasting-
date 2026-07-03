@@ -10,14 +10,17 @@
       --text: #1a2733; --muted: #64748b; --accent: #2b8cbe; --accent-2: #1f6f99;
       --a: #2b8cbe; --b: #7bccc4; --c: #bae4bc;
       --crit: #e34a33; --warn: #f39c12; --ok: #27ae60;
-      --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
+      --radius: 16px; --radius-sm: 12px;
+      --shadow: 0 2px 8px rgba(16,24,40,.06), 0 1px 2px rgba(16,24,40,.05);
+      --shadow-md: 0 8px 24px rgba(16,24,40,.10);
     }
     :root[data-theme="dark"] {
       --bg: #0f1720; --surface: #17212b; --surface-2: #1e2b38; --border: #26333f;
       --text: #e6edf3; --muted: #8aa0b3; --accent: #34c0eb; --accent-2: #2b8cbe;
       --a: #2b8cbe; --b: #34c0eb; --c: #7bccc4;
       --crit: #ff6b5b; --warn: #f5b041; --ok: #35d07f;
-      --shadow: 0 1px 3px rgba(0,0,0,.3);
+      --shadow: 0 2px 10px rgba(0,0,0,.35), 0 1px 2px rgba(0,0,0,.3);
+      --shadow-md: 0 10px 28px rgba(0,0,0,.45);
     }
     @media (prefers-color-scheme: dark) {
       :root:not([data-theme="light"]) {
@@ -25,7 +28,8 @@
         --text: #e6edf3; --muted: #8aa0b3; --accent: #34c0eb; --accent-2: #2b8cbe;
         --a: #2b8cbe; --b: #34c0eb; --c: #7bccc4;
         --crit: #ff6b5b; --warn: #f5b041; --ok: #35d07f;
-        --shadow: 0 1px 3px rgba(0,0,0,.3);
+        --shadow: 0 2px 10px rgba(0,0,0,.35), 0 1px 2px rgba(0,0,0,.3);
+        --shadow-md: 0 10px 28px rgba(0,0,0,.45);
       }
     }
     * { box-sizing: border-box; }
@@ -55,7 +59,7 @@
     .theme-btn { border: 1px solid var(--border); background: var(--surface-2);
       color: var(--text); width: 38px; height: 38px; border-radius: 9px; cursor: pointer;
       font-size: 16px; }
-    main { max-width: 1160px; margin: 0 auto; padding: 22px 20px 60px; }
+    main { max-width: 1160px; margin: 0 auto; padding: 22px 20px 24px; }
     .panel { display: none; }
     .panel.active { display: block; animation: fade .2s; }
     @keyframes fade { from { opacity: 0; transform: translateY(4px);} to { opacity:1; transform:none;} }
@@ -63,9 +67,10 @@
       color: var(--muted); margin: 26px 0 12px; }
 
     /* KPI hero cards */
-    .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(175px, 1fr)); gap: 14px; }
-    .kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
-      padding: 16px 18px; box-shadow: var(--shadow); }
+    .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(175px, 1fr)); gap: 16px; }
+    .kpi { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 18px 20px; box-shadow: var(--shadow); transition: transform .18s, box-shadow .18s; }
+    .kpi:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
     .kpi .label { color: var(--muted); font-size: 12.5px; font-weight: 500; display:flex; gap:6px; align-items:center; }
     .kpi .value { font-size: 27px; font-weight: 700; margin-top: 6px; }
     .kpi .sub { color: var(--muted); font-size: 12px; margin-top: 2px; }
@@ -74,8 +79,8 @@
 
     /* Cards / layout */
     .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
-      padding: 18px; box-shadow: var(--shadow); }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 20px; box-shadow: var(--shadow); }
     .card h3 { margin: 0 0 14px; font-size: 15px; }
 
     /* Bars (ABC + alerts) */
@@ -87,9 +92,9 @@
     /* Table */
     .filters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
     .filters input, .filters select { background: var(--surface); color: var(--text);
-      border: 1px solid var(--border); border-radius: 9px; padding: 8px 11px; font-size: 13.5px; }
+      border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 9px 12px; font-size: 13.5px; }
     .filters input { flex: 1; min-width: 150px; }
-    .tablewrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; }
+    .tablewrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
     table { width: 100%; border-collapse: collapse; font-size: 13px; }
     th, td { padding: 10px 12px; text-align: left; white-space: nowrap; }
     thead th { background: var(--surface-2); color: var(--muted); font-weight: 600;
@@ -106,26 +111,52 @@
     .pill.OK { background: color-mix(in srgb, var(--ok) 20%, transparent); color: var(--ok); }
 
     /* Chat */
-    #chat { height: 60vh; min-height: 380px; overflow-y: auto; padding: 6px 2px; }
-    .msg { display: flex; margin-bottom: 14px; }
+    #chat { min-height: 54vh; padding: 8px 2px 4px; }
+    .msg { display: flex; margin-bottom: 14px; animation: rise .28s ease; }
+    @keyframes rise { from { opacity: 0; transform: translateY(9px);} to { opacity: 1; transform: none;} }
     .msg.user { justify-content: flex-end; }
-    .bubble { max-width: 80%; padding: 11px 15px; border-radius: 14px; line-height: 1.5;
-      white-space: pre-wrap; font-size: 14.5px; }
-    .msg.user .bubble { background: var(--accent); color: #fff; border-bottom-right-radius: 4px; }
-    .msg.bot .bubble { background: var(--surface-2); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
-    .tools { margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; }
+    .bubble { max-width: 82%; padding: 12px 16px; border-radius: var(--radius); line-height: 1.55;
+      font-size: 14.5px; box-shadow: var(--shadow); transition: transform .16s, box-shadow .16s; }
+    .bubble:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
+    .msg.user .bubble { background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: #fff; border-bottom-right-radius: 5px; }
+    .msg.bot .bubble { background: var(--surface); border: 1px solid var(--border);
+      border-bottom-left-radius: 5px; }
+    /* Markdown inside bot bubbles */
+    .bubble > *:first-child { margin-top: 0; } .bubble > *:last-child { margin-bottom: 0; }
+    .bubble p { margin: 0 0 8px; }
+    .bubble h3, .bubble h4 { margin: 6px 0 8px; font-size: 15px; }
+    .bubble ul, .bubble ol { margin: 6px 0 8px; padding-left: 20px; } .bubble li { margin: 3px 0; }
+    .bubble strong { font-weight: 700; }
+    .bubble code { background: var(--surface-2); border-radius: 6px; padding: 1px 6px; font-size: 13px; }
+    .bubble table { border-collapse: collapse; margin: 8px 0; font-size: 13px; width: 100%; }
+    .bubble th, .bubble td { border: 1px solid var(--border); padding: 6px 10px; text-align: left; }
+    .bubble thead th { background: var(--surface-2); }
+    .tools { margin-top: 10px; display: flex; gap: 6px; flex-wrap: wrap; }
     .tool-badge { font-size: 11px; color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent);
-      border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); border-radius: 20px; padding: 2px 9px; }
-    .chips { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+      border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); border-radius: 999px; padding: 2px 9px; }
+    /* Mini inline chart */
+    .minichart { margin-top: 10px; background: var(--surface-2); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 10px 12px 8px; }
+    .minichart .ct { font-size: 11.5px; color: var(--muted); font-weight: 600; margin-bottom: 4px; }
+    .minichart .lg { display: flex; gap: 14px; font-size: 11px; color: var(--muted); margin-top: 4px; }
+    .minichart .lg i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+    /* Composer — sticky bottom */
+    .composer { position: sticky; bottom: 0; z-index: 5; margin-top: 10px; padding: 12px 0 8px;
+      background: linear-gradient(to bottom, transparent, var(--bg) 26%); }
+    .chips { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 10px; }
     .chip { font-size: 12.5px; color: var(--muted); background: var(--surface); border: 1px solid var(--border);
-      border-radius: 20px; padding: 6px 12px; cursor: pointer; }
-    .chip:hover { color: var(--text); border-color: var(--accent); }
-    .inputrow { display: flex; gap: 10px; background: var(--surface); border: 1px solid var(--border);
-      border-radius: 14px; padding: 8px 8px 8px 15px; }
+      border-radius: 999px; padding: 7px 13px; cursor: pointer; transition: all .15s; box-shadow: var(--shadow); }
+    .chip:hover { color: var(--text); border-color: var(--accent); transform: translateY(-1px); }
+    .inputrow { display: flex; gap: 10px; align-items: flex-end; background: var(--surface);
+      border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 8px 8px 16px;
+      box-shadow: var(--shadow-md); transition: border-color .15s; }
+    .inputrow:focus-within { border-color: var(--accent); }
     #input { flex: 1; background: transparent; border: none; color: var(--text); font-size: 15px;
-      outline: none; resize: none; max-height: 120px; line-height: 1.4; padding: 6px 0; }
-    #send { background: var(--accent); color: #fff; border: none; border-radius: 10px; padding: 0 18px;
-      font-weight: 600; cursor: pointer; }
+      outline: none; resize: none; max-height: 120px; line-height: 1.45; padding: 8px 0; }
+    #send { background: var(--accent); color: #fff; border: none; border-radius: var(--radius-sm);
+      padding: 10px 18px; font-weight: 600; cursor: pointer; transition: background .15s, transform .1s; }
+    #send:hover { background: var(--accent-2); } #send:active { transform: scale(.97); }
     #send:disabled { opacity: .5; }
     .typing { color: var(--muted); font-style: italic; }
 
@@ -142,7 +173,7 @@
     /* ABC-XYZ matrix */
     .matrix { display: grid; grid-template-columns: 46px repeat(3, 1fr); gap: 6px; max-width: 460px; }
     .matrix .h { color: var(--muted); font-size: 12px; font-weight: 600; display: grid; place-items: center; }
-    .matrix .cell { background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    .matrix .cell { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm);
       padding: 14px 0; text-align: center; font-weight: 700; font-size: 18px; }
     .matrix .cell small { display: block; font-weight: 500; font-size: 10px; color: var(--muted); margin-top: 2px; }
     @media (max-width: 720px) { .grid2 { grid-template-columns: 1fr; } .kpi .value { font-size: 23px; } }
@@ -167,15 +198,17 @@
     <!-- CHAT -->
     <section class="panel active" id="chat-panel">
       <div id="chat"></div>
-      <div class="chips" id="chips">
-        <div class="chip">📋 Yönetici özeti ver</div>
-        <div class="chip">ABC analizini özetle</div>
-        <div class="chip">Anomalileri açıkla</div>
-        <div class="chip">S003 P0011 için newsvendor sipariş miktarı</div>
-      </div>
-      <div class="inputrow">
-        <textarea id="input" rows="1" placeholder="Talep, stok, ABC, EOQ hakkında sor..."></textarea>
-        <button id="send">Gönder</button>
+      <div class="composer">
+        <div class="chips" id="chips">
+          <div class="chip">📋 Yönetici özeti ver</div>
+          <div class="chip">S001 P0001 talep trendi</div>
+          <div class="chip">EOQ nedir?</div>
+          <div class="chip">Anomalileri açıkla</div>
+        </div>
+        <div class="inputrow">
+          <textarea id="input" rows="1" placeholder="Talep, stok, ABC, EOQ hakkında sor..."></textarea>
+          <button id="send">Gönder</button>
+        </div>
       </div>
     </section>
 
@@ -382,16 +415,75 @@
     // ---- Chat ----
     const chat = $("#chat"), input = $("#input"), send = $("#send");
     let history = [];
+
+    // Minimal, safe Markdown -> HTML (headings, bold, code, lists, tables).
+    const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const inlineMd = s => esc(s).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+      .replace(/`([^`]+?)`/g, "<code>$1</code>");
+    function mdToHtml(md) {
+      const lines = (md || "").replace(/\r/g, "").split("\n");
+      const isSep = s => s.includes("-") && /^\s*\|?[\s:|-]*-[\s:|-]*\|?\s*$/.test(s);
+      const cells = r => { let a = r.split("|").map(c => c.trim()); if (a[0] === "") a.shift(); if (a[a.length-1] === "") a.pop(); return a; };
+      let html = "", i = 0;
+      while (i < lines.length) {
+        const line = lines[i];
+        if (line.includes("|") && i + 1 < lines.length && isSep(lines[i + 1])) {
+          const header = cells(line); i += 2; const body = [];
+          while (i < lines.length && lines[i].includes("|")) { body.push(cells(lines[i])); i++; }
+          html += "<table><thead><tr>" + header.map(h => `<th>${inlineMd(h)}</th>`).join("") +
+            "</tr></thead><tbody>" + body.map(r => "<tr>" + header.map((_, j) =>
+              `<td>${inlineMd(r[j] || "")}</td>`).join("") + "</tr>").join("") + "</tbody></table>";
+          continue;
+        }
+        const h = line.match(/^(#{1,4})\s+(.*)$/);
+        if (h) { const lv = Math.min(h[1].length + 2, 4); html += `<h${lv}>${inlineMd(h[2])}</h${lv}>`; i++; continue; }
+        if (/^\s*[-*]\s+/.test(line)) { html += "<ul>";
+          while (i < lines.length && /^\s*[-*]\s+/.test(lines[i])) { html += `<li>${inlineMd(lines[i].replace(/^\s*[-*]\s+/, ""))}</li>`; i++; }
+          html += "</ul>"; continue; }
+        if (/^\s*\d+\.\s+/.test(line)) { html += "<ol>";
+          while (i < lines.length && /^\s*\d+\.\s+/.test(lines[i])) { html += `<li>${inlineMd(lines[i].replace(/^\s*\d+\.\s+/, ""))}</li>`; i++; }
+          html += "</ol>"; continue; }
+        if (line.trim() === "") { i++; continue; }
+        const para = [line]; i++;
+        while (i < lines.length && lines[i].trim() !== "" &&
+          !/^(#{1,4}\s|\s*[-*]\s|\s*\d+\.\s)/.test(lines[i]) && !lines[i].includes("|")) { para.push(lines[i]); i++; }
+        html += `<p>${para.map(inlineMd).join("<br>")}</p>`;
+      }
+      return html;
+    }
+
     function badges(tools) {
       if (!tools || !tools.length) return "";
       return `<div class="tools">${[...new Set(tools)].map(t => `<span class="tool-badge">🔧 ${t}</span>`).join("")}</div>`;
     }
-    function addMsg(role, text) {
+    // Inline SVG mini line chart (e.g. demand trend).
+    function miniChart(chart) {
+      if (!chart || !chart.series) return "";
+      const all = chart.series.flatMap(s => s.values).filter(v => v != null);
+      if (!all.length) return "";
+      const W = 300, H = 88, P = 6, n = chart.labels.length;
+      const mn = Math.min(...all), span = (Math.max(...all) - mn) || 1;
+      const x = k => P + (W - 2 * P) * (n <= 1 ? 0.5 : k / (n - 1));
+      const y = v => H - P - (H - 2 * P) * (v - mn) / span;
+      const cs = getComputedStyle(document.documentElement);
+      const col = [cs.getPropertyValue("--accent").trim() || "#2b8cbe", cs.getPropertyValue("--muted").trim() || "#888"];
+      const paths = chart.series.map((s, si) => {
+        const pts = s.values.map((v, k) => v == null ? null : `${x(k).toFixed(1)},${y(v).toFixed(1)}`).filter(Boolean).join(" ");
+        return `<polyline fill="none" stroke="${col[si % 2]}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="${pts}"/>`;
+      }).join("");
+      const lg = chart.series.map((s, si) => `<span><i style="background:${col[si % 2]}"></i>${esc(s.name)}</span>`).join("");
+      return `<div class="minichart"><div class="ct">${esc(chart.title || "")}</div>` +
+        `<svg viewBox="0 0 ${W} ${H}" width="100%" height="88" preserveAspectRatio="none">${paths}</svg>` +
+        `<div class="lg">${lg}</div></div>`;
+    }
+
+    const scrollDown = () => window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+    function addMsg(role, content, raw = false) {
       const w = document.createElement("div"); w.className = "msg " + role;
-      w.innerHTML = `<div class="bubble"></div>`;
-      w.querySelector(".bubble").textContent = text;
-      chat.appendChild(w); chat.scrollTop = chat.scrollHeight;
-      return w.querySelector(".bubble");
+      const b = document.createElement("div"); b.className = "bubble";
+      if (raw) b.innerHTML = content; else b.textContent = content;
+      w.appendChild(b); chat.appendChild(w); scrollDown();
+      return b;
     }
     async function ask(message) {
       addMsg("user", message); history.push({ role: "user", content: message });
@@ -403,18 +495,18 @@
           body: JSON.stringify({ message, history: history.slice(0, -1) }) });
         const raw = await res.text(); let data;
         try { data = JSON.parse(raw); } catch { throw new Error("Sunucu uyanıyor, birkaç saniye sonra tekrar dene."); }
-        b.classList.remove("typing"); b.textContent = data.answer || "(boş yanıt)";
-        b.insertAdjacentHTML("beforeend", badges(data.tools_used));
+        b.classList.remove("typing");
+        b.innerHTML = mdToHtml(data.answer || "(boş yanıt)") + miniChart(data.chart) + badges(data.tools_used);
         history.push({ role: "assistant", content: data.answer || "" });
       } catch (e) { b.classList.remove("typing"); b.textContent = "Hata: " + e.message; }
-      finally { send.disabled = false; chat.scrollTop = chat.scrollHeight; }
+      finally { send.disabled = false; scrollDown(); }
     }
     function submit() { const m = input.value.trim(); if (!m) return; input.value = ""; input.style.height = "auto"; ask(m); }
     send.onclick = submit;
     input.addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); } });
     input.addEventListener("input", () => { input.style.height = "auto"; input.style.height = Math.min(input.scrollHeight, 120) + "px"; });
     $("#chips").addEventListener("click", e => { if (e.target.classList.contains("chip")) { input.value = e.target.textContent; submit(); } });
-    addMsg("bot", "Merhaba! 👋 Talep tahminleri, stok politikası, ABC analizi ve EOQ hakkında soru sorabilirsin. Dashboard sekmesinden canlı metrikleri de görebilirsin.");
+    addMsg("bot", mdToHtml("Merhaba! 👋 Talep tahminleri, stok politikası, **ABC/EOQ/newsvendor** ve daha fazlası hakkında sorabilirsin. Örneğin *\"S001 P0001 talep trendi\"* dersen mini grafik de gösteririm."), true);
   </script>
 </body>
 </html>
