@@ -17,9 +17,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 
-from tools import TOOL_SPECS, dispatch
+import pandas as pd
+
+from tools import DATA_DIR, TOOL_SPECS, dispatch
 
 STATIC_DIR = Path(__file__).parent / "static"
+
+
+def _csv(name):
+    return pd.read_csv(DATA_DIR / name)
 
 SYSTEM_PROMPT = """You are a demand-planning and inventory assistant for a retail chain.
 Answer questions about product demand forecasts and stock recommendations by calling
@@ -110,6 +116,55 @@ def home():
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@app.get("/api/kpis")
+def api_kpis():
+    """Hero KPIs for the dashboard."""
+    inv = _csv("inventory_analytics.csv")
+    stock = _csv("stock_recommendations.csv")
+    naive = float(stock["avg_inventory_naive"].sum())
+    model = float(stock["avg_inventory_model"].sum())
+    try:
+        r2 = float(_csv("model_metrics.csv").sort_values("RMSE").iloc[0]["R2"])
+    except Exception:
+        r2 = None
+    return {
+        "total_skus": int(len(inv)),
+        "model_r2": round(r2, 3) if r2 is not None else None,
+        "inventory_reduction_pct": round((naive - model) / naive * 100, 1),
+        "avg_service_level_pct": round(float(stock["service_model"].mean()) * 100, 1),
+        "reorder_alerts": int((inv["alert_status"] != "OK").sum()),
+        "critical_alerts": int((inv["alert_status"] == "CRITICAL").sum()),
+        "class_a_skus": int((inv["abc_class"] == "A").sum()),
+        "abc": {c: int((inv["abc_class"] == c).sum()) for c in ["A", "B", "C"]},
+        "alert_counts": {
+            s: int((inv["alert_status"] == s).sum()) for s in ["CRITICAL", "REORDER", "OK"]
+        },
+    }
+
+
+@app.get("/api/inventory")
+def api_inventory():
+    """Full per-SKU table for the filterable product grid."""
+    inv = _csv("inventory_analytics.csv")
+    return {"rows": inv.to_dict("records")}
+
+
+@app.get("/api/metrics")
+def api_metrics():
+    """Model comparison / backtest / quantile tables for the Reports tab."""
+    out = {}
+    for key, fname in [
+        ("model", "model_metrics.csv"),
+        ("backtest", "backtest_metrics.csv"),
+        ("quantile", "quantile_metrics.csv"),
+    ]:
+        try:
+            out[key] = _csv(fname).to_dict("records")
+        except Exception:
+            out[key] = []
+    return out
 
 
 @app.exception_handler(Exception)
