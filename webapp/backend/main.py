@@ -43,6 +43,11 @@ question, call optimizasyon_onerisi. It runs a real linear program that minimise
 total holding + stockout cost under a budget, a warehouse-capacity limit and a minimum
 service level. Report the achieved service level, the budget and capacity used, the
 savings versus an even-cut baseline, and list a few of the biggest recommended orders.
+For a "finansal özet" / money question — ciro, brüt kâr/marj, stok azaltımının ₺
+tasarrufu, stok devir hızı, promosyon ROI — call finansal_ozet and report the figures
+in ₺. State that the gross-margin and holding-cost rates are assumptions from the
+result, and note if promotion ROI is negative (discount cost exceeds the incremental
+gross profit at the current margin).
 When you list stockout or critical alerts, state the tool's "total" count (e.g. "42 kritik
 ürün") — that is the true number; never report only how many rows you happened to show.
 When the user asks for a PDF or a report ("PDF yap", "rapor oluştur"), call pdf_rapor and
@@ -178,7 +183,8 @@ FOLLOWUPS = {
     "list_top_stockout_risks": ["Yönetici özeti ver", "Reorder gereken ürünler", "Güvenlik stoğu nedir?"],
     "yonetici_ozeti": ["En riskli ürünleri listele", "Anomalileri açıkla", "Optimizasyon önerisi ver"],
     "inventory_summary": ["ABC analizini özetle", "Reorder gereken ürünler", "Optimizasyon önerisi ver"],
-    "optimizasyon_onerisi": ["Bütçeyi %20 azaltırsam ne olur?", "En riskli ürünleri listele", "Yönetici özeti ver"],
+    "optimizasyon_onerisi": ["Bütçeyi %20 azaltırsam ne olur?", "En riskli ürünleri listele", "Finansal özet ver"],
+    "finansal_ozet": ["Promosyon ROI neden negatif?", "Optimizasyon önerisi ver", "En kârlı ürünler hangileri?"],
 }
 DEFAULT_FOLLOWUPS = ["Yönetici özeti ver", "ABC analizini özetle", "EOQ nedir?"]
 
@@ -415,6 +421,21 @@ def api_optimization():
     except Exception:
         summary = {}
     return {"summary": summary, "allocation": alloc}
+
+
+@app.get("/api/financials")
+def api_financials():
+    """Financial-metric layer: portfolio summary + per-SKU financial table."""
+    try:
+        metrics = _csv("financial_metrics.csv").to_dict("records")
+    except Exception:
+        metrics = []
+    try:
+        with open(DATA_DIR / "financial_summary.json") as f:
+            summary = json.load(f)
+    except Exception:
+        summary = {}
+    return {"summary": summary, "metrics": metrics}
 
 
 @app.exception_handler(Exception)

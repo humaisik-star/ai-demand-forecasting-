@@ -155,7 +155,9 @@
     .opt-stat { background: var(--surface-2); border: 1px solid var(--border);
       border-radius: var(--radius-sm); padding: 12px 14px; }
     .opt-stat b { font-size: 20px; display: block; } .opt-stat b.good { color: var(--ok); }
+    .opt-stat b.crit { color: var(--crit); }
     .opt-stat span { font-size: 11.5px; color: var(--muted); }
+    .opt-stat span small { display: block; margin-top: 2px; opacity: .85; }
     .opt-orders { overflow-x: auto; }
     .opt-orders table { width: 100%; border-collapse: collapse; font-size: 13px; }
     .opt-orders th, .opt-orders td { padding: 8px 10px; text-align: left; white-space: nowrap;
@@ -426,6 +428,9 @@
         <div class="card"><h3 data-i18n="dash_abc">ABC dağılımı</h3><div class="bars" id="abcBars"></div></div>
       </div>
 
+      <h2 class="section" data-i18n="fin_title">💰 Finansal özet</h2>
+      <div class="card" id="finCard"><div class="muted" data-i18n="fin_loading">Yükleniyor…</div></div>
+
       <h2 class="section" data-i18n="opt_title">🧮 Optimizasyon önerisi</h2>
       <div class="card" id="optCard"><div class="muted" data-i18n="opt_loading">Yükleniyor…</div></div>
 
@@ -530,6 +535,11 @@
         hist_title: "Sohbet geçmişi", hist_new: "＋ Yeni sohbet", hist_empty: "Henüz kayıtlı sohbet yok.",
         hist_tip: "Sohbet geçmişi", hist_del: "Sohbeti sil", new_chat_title: "Yeni sohbet",
         dash_alerts: "Stok durumu (uyarılar)", dash_abc: "ABC dağılımı", dash_table: "Ürün tablosu",
+        fin_title: "💰 Finansal özet", fin_loading: "Yükleniyor…",
+        fin_desc: "Operasyonel çıktıların para karşılığı. Brüt marj ve holding maliyeti oranı varsayımdır.",
+        fin_revenue: "Yıllık ciro", fin_profit: "Brüt kâr", fin_margin: "marj",
+        fin_savings: "Yıllık stok tasarrufu", fin_capital: "serbest sermaye",
+        fin_turnover: "Stok devir hızı", fin_promo: "Promosyon ROI", fin_lift: "talep artışı", fin_assume: "Varsayım",
         opt_title: "🧮 Optimizasyon önerisi", opt_loading: "Yükleniyor…",
         opt_desc: "Bütçe, depo kapasitesi ve minimum hizmet seviyesi kısıtları altında toplam elde tutma + stok tükenme maliyetini minimize eden doğrusal programlama (LP) çözümü. Her mağaza-ürün için önerilen tahsis:",
         opt_service: "Ort. hizmet seviyesi", opt_budget: "Bütçe kullanımı", opt_cost: "Toplam beklenen maliyet",
@@ -575,6 +585,11 @@
         hist_title: "Chat history", hist_new: "＋ New chat", hist_empty: "No saved chats yet.",
         hist_tip: "Chat history", hist_del: "Delete chat", new_chat_title: "New chat",
         dash_alerts: "Stock status (alerts)", dash_abc: "ABC distribution", dash_table: "Product table",
+        fin_title: "💰 Financial summary", fin_loading: "Loading…",
+        fin_desc: "The operational outputs in money terms. Gross-margin and holding-cost rates are assumptions.",
+        fin_revenue: "Annual revenue", fin_profit: "Gross profit", fin_margin: "margin",
+        fin_savings: "Annual inventory savings", fin_capital: "capital freed",
+        fin_turnover: "Inventory turnover", fin_promo: "Promotion ROI", fin_lift: "demand lift", fin_assume: "Assumption",
         opt_title: "🧮 Optimization suggestion", opt_loading: "Loading…",
         opt_desc: "A linear program (LP) that minimises total holding + stockout cost under a procurement budget, a warehouse-capacity limit and a minimum service level, deciding the allocation for each store-product:",
         opt_service: "Avg service level", opt_budget: "Budget used", opt_cost: "Total expected cost",
@@ -643,6 +658,7 @@
         const so = $("#fStore"); if (so.options[0]) so.options[0].textContent = T("f_all_stores");
         renderTable();
       }
+      if (typeof finData !== "undefined" && finData) renderFinancial();
       if (typeof optData !== "undefined" && optData) renderOptimization();
       if (typeof reportsLoaded !== "undefined" && reportsLoaded) { reportsLoaded = false; loadReports(); }
     }
@@ -711,7 +727,36 @@
           stores.map(s => `<option>${s}</option>`).join("");
         renderTable();
       } catch (e) { $("#kpis").innerHTML = `<div class="muted">${e.message}</div>`; }
+      loadFinancial();
       loadOptimization();
+    }
+
+    // ---- Financial summary (money-terms metrics) ----
+    let finData = null;
+    async function loadFinancial() {
+      try {
+        finData = await (await fetch(API + "/api/financials")).json();
+        renderFinancial();
+      } catch (e) { $("#finCard").innerHTML = `<div class="muted">${e.message}</div>`; }
+    }
+    function renderFinancial() {
+      if (!finData) return;
+      const s = finData.summary || {};
+      if (!s.total_revenue) { $("#finCard").innerHTML = `<div class="muted">${T("no_data")}</div>`; return; }
+      const roiCls = (s.promo_roi_pct || 0) >= 0 ? "good" : "crit";
+      const money = v => "₺" + fmt(Math.round(v || 0));
+      const tiles = [
+        [money(s.total_revenue), T("fin_revenue"), "", ""],
+        [money(s.total_gross_profit), T("fin_profit"), "good", `${T("fin_margin")}: ${pct(s.gross_margin_pct)}`],
+        [money(s.annual_holding_savings), T("fin_savings"), "good", `${T("fin_capital")}: ${money(s.total_capital_freed)}`],
+        [`${s.portfolio_turnover}×`, T("fin_turnover"), "", ""],
+        [pct(s.promo_roi_pct), T("fin_promo"), roiCls, `${T("fin_lift")}: ${pct(s.avg_promo_lift_pct)}`],
+      ].map(([v, l, c, sub]) =>
+        `<div class="opt-stat"><b class="${c}">${v}</b><span>${l}${sub ? `<small>${sub}</small>` : ""}</span></div>`).join("");
+      const hr = s.assumptions ? Math.round(s.assumptions.holding_rate * 100) : 25;
+      $("#finCard").innerHTML =
+        `<p class="opt-desc">${T("fin_desc")} ${T("fin_assume")}: ${T("fin_margin")} ${pct(s.gross_margin_pct)}, holding ${pct(hr)}.</p>
+         <div class="opt-stats">${tiles}</div>`;
     }
 
     // ---- Optimization suggestion (multi-store allocation LP) ----

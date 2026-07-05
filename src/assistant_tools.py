@@ -26,6 +26,8 @@ ADV_PATH = Path("results/advanced_analytics.csv")
 ANOM_PATH = Path("results/anomalies.csv")
 OPT_PATH = Path("results/optimization_allocation.csv")
 OPT_SUMMARY_PATH = Path("results/optimization_summary.json")
+FIN_PATH = Path("results/financial_metrics.csv")
+FIN_SUMMARY_PATH = Path("results/financial_summary.json")
 
 _pred_cache = None
 _stock_cache = None
@@ -33,6 +35,7 @@ _inv_cache = None
 _adv_cache = None
 _anom_cache = None
 _opt_cache = None
+_fin_cache = None
 
 
 # Loaders read from db/analysis.db when present, otherwise the result CSV.
@@ -82,6 +85,16 @@ def _optimization() -> pd.DataFrame:
         except Exception:
             _opt_cache = pd.DataFrame()
     return _opt_cache
+
+
+def _financials() -> pd.DataFrame:
+    global _fin_cache
+    if _fin_cache is None:
+        try:
+            _fin_cache = _load_table("financial_metrics", FIN_PATH)
+        except Exception:
+            _fin_cache = pd.DataFrame()
+    return _fin_cache
 
 
 # --------------------------------------------------------------------------- #
@@ -292,6 +305,25 @@ def bilgi_ara(query: str, top_k: int = 3) -> dict:
         return {"error": str(e)}
 
 
+def finansal_ozet(top_n: int = 5) -> dict:
+    """Financial-metric summary in money terms: revenue, gross profit/margin, the
+    ₺ saved by inventory reduction, portfolio turnover, and promotion ROI. Also
+    returns the most profitable SKUs. Numbers use the assumptions in the summary.
+    """
+    fin = _financials()
+    if fin.empty:
+        return {"error": "Finansal metrikler bulunamadı. Önce financial_metrics.py çalıştırın."}
+    try:
+        with open(FIN_SUMMARY_PATH) as f:
+            summary = json.load(f)
+    except Exception:
+        summary = {}
+    cols = ["Store ID", "Product ID", "abc_class", "revenue", "gross_profit",
+            "turnover", "promo_roi_pct"]
+    top = fin.sort_values("gross_profit", ascending=False).head(top_n)
+    return {"summary": summary, "top_by_profit": top[cols].to_dict("records")}
+
+
 def optimizasyon_onerisi(top_n: int = 8) -> dict:
     """Multi-store stock-allocation optimisation result (PuLP linear program).
 
@@ -358,6 +390,7 @@ _FUNCS = {
     "list_anomalies": list_anomalies,
     "yonetici_ozeti": yonetici_ozeti,
     "optimizasyon_onerisi": optimizasyon_onerisi,
+    "finansal_ozet": finansal_ozet,
     "bilgi_ara": bilgi_ara,
     "whatif_simulasyon": whatif_simulasyon,
     "pdf_rapor": pdf_rapor,
@@ -488,6 +521,14 @@ TOOL_SPECS = [
             "name": "yonetici_ozeti",
             "description": "Full snapshot (KPIs, ABC/ABC-XYZ, top alerts, anomalies) to build an executive summary. Call this when the user asks for a yönetici özeti / executive summary.",
             "parameters": {"type": "object", "properties": {}},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "finansal_ozet",
+            "description": "Financial summary in money terms: ₺ revenue (demand×price), gross profit and margin, the ₺ saved by the model's inventory reduction (freed capital + annual holding-cost savings), portfolio inventory turnover, and promotion ROI with average demand lift. Call for 'finansal özet', 'kâr/marj', 'ciro', 'promosyon ROI', 'stok devir hızı'. Returns the summary plus the most profitable SKUs; numbers use the gross-margin and holding-cost assumptions stated in the result.",
+            "parameters": {"type": "object", "properties": {"top_n": {"type": "integer", "default": 5}}},
         },
     },
     {

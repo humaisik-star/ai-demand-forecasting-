@@ -21,6 +21,8 @@ ADV_PATH = DATA_DIR / "advanced_analytics.csv"
 ANOM_PATH = DATA_DIR / "anomalies.csv"
 OPT_PATH = DATA_DIR / "optimization_allocation.csv"
 OPT_SUMMARY_PATH = DATA_DIR / "optimization_summary.json"
+FIN_PATH = DATA_DIR / "financial_metrics.csv"
+FIN_SUMMARY_PATH = DATA_DIR / "financial_summary.json"
 
 _pred_cache = None
 _stock_cache = None
@@ -28,6 +30,7 @@ _inv_cache = None
 _adv_cache = None
 _anom_cache = None
 _opt_cache = None
+_fin_cache = None
 
 
 # Loaders read from analysis.db when present, otherwise the bundled CSV.
@@ -82,6 +85,24 @@ def _optimization() -> pd.DataFrame:
 def _opt_summary() -> dict:
     try:
         with open(OPT_SUMMARY_PATH) as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
+def _financials() -> pd.DataFrame:
+    global _fin_cache
+    if _fin_cache is None:
+        try:
+            _fin_cache = _load_table("financial_metrics", FIN_PATH)
+        except Exception:
+            _fin_cache = pd.DataFrame()
+    return _fin_cache
+
+
+def _fin_summary() -> dict:
+    try:
+        with open(FIN_SUMMARY_PATH) as f:
             return json.load(f)
     except Exception:
         return {}
@@ -276,6 +297,22 @@ def bilgi_ara(query: str, top_k: int = 3) -> dict:
         return {"error": str(e)}
 
 
+def finansal_ozet(top_n: int = 5) -> dict:
+    """Financial-metric summary: ₺ revenue, gross profit/margin, the money saved
+    by the model's inventory reduction (freed capital + annual holding savings),
+    portfolio inventory turnover, and promotion ROI. Also returns the most
+    profitable SKUs. Numbers assume a gross-margin and holding-cost rate stated
+    in the summary."""
+    fin = _financials()
+    summary = _fin_summary()
+    if fin.empty:
+        return {"error": "Finansal metrikler bulunamadı. Önce financial_metrics.py çalıştırın."}
+    cols = ["Store ID", "Product ID", "abc_class", "revenue", "gross_profit",
+            "turnover", "promo_roi_pct"]
+    top = fin.sort_values("gross_profit", ascending=False).head(top_n)
+    return {"summary": summary, "top_by_profit": top[cols].to_dict("records")}
+
+
 def optimizasyon_onerisi(top_n: int = 8) -> dict:
     """Multi-store stock-allocation optimisation result. A PuLP linear program
     minimises total holding + stockout cost under a procurement budget, a
@@ -328,6 +365,7 @@ _FUNCS = {
     "list_anomalies": list_anomalies,
     "yonetici_ozeti": yonetici_ozeti,
     "optimizasyon_onerisi": optimizasyon_onerisi,
+    "finansal_ozet": finansal_ozet,
     "bilgi_ara": bilgi_ara,
     "whatif_simulasyon": whatif_simulasyon,
     "pdf_rapor": pdf_rapor,
@@ -379,6 +417,9 @@ TOOL_SPECS = [
     {"type": "function", "function": {"name": "yonetici_ozeti",
         "description": "Full snapshot (KPIs, ABC/ABC-XYZ, top alerts, anomalies) to build an executive summary. Call when the user asks for a yönetici özeti / executive summary.",
         "parameters": {"type": "object", "properties": {}}}},
+    {"type": "function", "function": {"name": "finansal_ozet",
+        "description": "Financial summary in money terms: ₺ revenue (demand×price), gross profit and margin, the ₺ saved by the model's inventory reduction (freed capital + annual holding-cost savings), portfolio inventory turnover, and promotion ROI with the average demand lift. Call for 'finansal özet', 'kâr/marj', 'ciro', 'stok azaltımı ne kadar tasarruf', 'promosyon ROI', 'stok devir hızı'. Returns the summary plus the most profitable SKUs. Numbers use the gross-margin and holding-cost assumptions stated in the result.",
+        "parameters": {"type": "object", "properties": {"top_n": {"type": "integer", "default": 5}}}}},
     {"type": "function", "function": {"name": "optimizasyon_onerisi",
         "description": "Multi-store stock-ALLOCATION optimisation result from a real linear program (PuLP): under a procurement budget, warehouse-capacity limit and minimum service level, it decides how many units to allocate to each store-product to minimise total holding + stockout cost. Call for 'optimizasyon önerisi', 'stok tahsisi', 'bütçeyle en iyi dağıtım', 'hangi ürüne ne kadar sipariş'. Returns the summary (budget/capacity used, total cost, service level, savings vs an even-cut baseline) and the biggest recommended orders.",
         "parameters": {"type": "object", "properties": {"top_n": {"type": "integer", "default": 8}}}}},

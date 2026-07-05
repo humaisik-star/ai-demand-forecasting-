@@ -1,0 +1,18 @@
+{
+  "total_revenue": 244437059.0,
+  "total_gross_profit": 85552968.0,
+  "gross_margin_pct": 35.0,
+  "total_capital_freed": 1006680.0,
+  "annual_holding_savings": 251666.0,
+  "inventory_reduction_pct": 28.4,
+  "portfolio_turnover": 96.2,
+  "n_skus": 100,
+  "assumptions": {
+    "gross_margin_rate": 0.35,
+    "holding_rate": 0.25
+  },
+  "promo_roi_pct": -34.9,
+  "promo_incremental_profit": 22466105.0,
+  "promo_discount_cost": 34519669.0,
+  "avg_promo_lift_pct": 29.8
+}
