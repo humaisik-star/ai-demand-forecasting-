@@ -166,12 +166,12 @@ def list_stockout_alerts(status: str = None, top_n: int = 10) -> dict:
     alerts = inv[inv["alert_status"] != "OK"]
     if status:
         alerts = alerts[alerts["alert_status"] == status.upper()]
-    alerts = alerts.sort_values("annual_revenue", ascending=False).head(top_n)
-    view = alerts[
+    total = int(len(alerts))  # full count (matches the dashboard banner)
+    view = alerts.sort_values("annual_revenue", ascending=False).head(top_n)[
         ["Store ID", "Product ID", "alert_status", "abc_class",
          "current_inventory", "reorder_point", "EOQ"]
     ].rename(columns={"EOQ": "economic_order_quantity"})
-    return {"count": int(len(alerts)), "alerts": view.to_dict("records")}
+    return {"total": total, "count": int(len(view)), "alerts": view.to_dict("records")}
 
 
 def get_advanced_policy(store_id: str, product_id: str) -> dict:

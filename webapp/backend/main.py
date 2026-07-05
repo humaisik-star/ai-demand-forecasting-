@@ -38,6 +38,8 @@ ABC / ABC-XYZ analysis, EOQ and newsvendor order sizing, reorder points, z-score
 stock, turnover, and stockout/anomaly alerts. For a "yönetici özeti" call yonetici_ozeti.
 For a what-if price question like "fiyatı %10 artırırsam ne olur" call whatif_simulasyon
 and report the resulting demand and revenue change, noting the assumed elasticity.
+When you list stockout or critical alerts, state the tool's "total" count (e.g. "42 kritik
+ürün") — that is the true number; never report only how many rows you happened to show.
 
 For CONCEPTUAL questions (what is / why / how — ABC, ABC-XYZ, EOQ, newsvendor, safety
 stock, reorder point, quantile forecasting, turnover, methodology) call bilgi_ara and
@@ -68,7 +70,7 @@ HOW TO WRITE THE ANSWER:
   Call only the tools you actually need and never repeat a tool call you already made.
 Reply in the user's language (Turkish by default)."""
 
-MAX_TOKENS = 1400  # cap answer length to keep responses fast and focused
+MAX_TOKENS = 2600  # ceiling covering reasoning + answer (gpt-5 reasons before writing)
 
 app = FastAPI(title="Demand & Stock Assistant API")
 
@@ -183,7 +185,7 @@ def run_turn(messages):
     while True:
         resp = client().chat.completions.create(
             model=deployment, messages=messages, tools=TOOL_SPECS, tool_choice="auto",
-            max_completion_tokens=MAX_TOKENS,
+            max_completion_tokens=MAX_TOKENS, reasoning_effort="low",
         )
         msg = resp.choices[0].message
         if not msg.tool_calls:
@@ -406,7 +408,7 @@ def stream_turn(messages):
     while True:
         stream = client().chat.completions.create(
             model=deployment, messages=messages, tools=TOOL_SPECS, tool_choice="auto",
-            max_completion_tokens=MAX_TOKENS, stream=True,
+            max_completion_tokens=MAX_TOKENS, reasoning_effort="low", stream=True,
         )
         content, calls = [], {}
         for chunk in stream:
