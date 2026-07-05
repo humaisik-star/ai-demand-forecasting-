@@ -4,7 +4,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from optimize_allocation import ABC_WEIGHT, optimize_allocation, service_target
+from optimize_allocation import (
+    ABC_WEIGHT, optimize_allocation, sensitivity_analysis, service_target)
 
 
 def _demo_frame():
@@ -88,3 +89,51 @@ def test_optimizer_beats_even_cut_baseline():
     _, summary = optimize_allocation(df, budget=0.6 * full_cost, capacity=10**9,
                                      min_service=0.3)
     assert summary["savings_vs_baseline"] >= -1e-6      # never worse than baseline
+
+
+# --- Feasibility / sensitivity -------------------------------------------------
+
+def test_infeasible_below_the_budget_floor():
+    df = _demo_frame()
+    full_cost = float((df["price"] * df["tau"]).sum())
+    # Floor to afford the min-service lower bounds = 0.5 * full_cost.
+    _, tight = optimize_allocation(df, budget=0.30 * full_cost, capacity=10**9,
+                                   min_service=0.5)
+    assert tight["solver_status"] == "Infeasible"
+    _, ok = optimize_allocation(df, budget=0.55 * full_cost, capacity=10**9,
+                                min_service=0.5)
+    assert ok["solver_status"] == "Optimal"
+
+
+def test_min_feasible_thresholds_match_min_service_floors():
+    df = _demo_frame()
+    full_cost = float((df["price"] * df["tau"]).sum())
+    full_units = float(df["tau"].sum())
+    _, s = optimize_allocation(df, budget=0.8 * full_cost, capacity=0.9 * full_units,
+                               min_service=0.5)
+    assert s["min_feasible_budget"] == pytest.approx(0.5 * full_cost, rel=1e-6)
+    assert s["min_feasible_capacity"] == pytest.approx(0.5 * full_units, abs=1)
+
+
+def test_binding_budget_has_positive_shadow_price():
+    df = _demo_frame()
+    full_cost = float((df["price"] * df["tau"]).sum())
+    _, tight = optimize_allocation(df, budget=0.7 * full_cost, capacity=10**9)
+    assert tight["budget_binding"] is True
+    assert tight["budget_shadow_price"] > 0
+    # A generous budget leaves the constraint slack -> zero shadow price.
+    _, loose = optimize_allocation(df, budget=10 * full_cost, capacity=10**9)
+    assert loose["budget_shadow_price"] == pytest.approx(0.0, abs=1e-6)
+    assert loose["budget_binding"] is False
+
+
+def test_sensitivity_curve_cost_falls_as_budget_grows():
+    df = _demo_frame()
+    full_cost = float((df["price"] * df["tau"]).sum())
+    sens = sensitivity_analysis(df, budget=0.8 * full_cost, capacity=10**9,
+                                min_service=0.5, n_points=7)
+    feas = [c for c in sens["curve"] if c["total_cost"] is not None]
+    costs = [c["total_cost"] for c in feas]
+    assert costs == sorted(costs, reverse=True)          # more budget -> lower cost
+    assert any(c["status"] == "Infeasible" for c in sens["curve"])  # floor is crossed
+    assert sens["min_feasible_budget"] == pytest.approx(0.5 * full_cost, rel=1e-6)

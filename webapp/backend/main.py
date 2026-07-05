@@ -43,6 +43,11 @@ question, call optimizasyon_onerisi. It runs a real linear program that minimise
 total holding + stockout cost under a budget, a warehouse-capacity limit and a minimum
 service level. Report the achieved service level, the budget and capacity used, the
 savings versus an even-cut baseline, and list a few of the biggest recommended orders.
+For a feasibility or sensitivity question (duyarlılık, gölge fiyat, "bütçe/kapasite
+değişirse", "ne zaman infeasible") use the same optimizasyon_onerisi result: quote the
+budget shadow price as "her +1 ₺ bütçe toplam maliyeti ~X ₺ düşürür", say whether the
+budget or capacity constraint is binding or slack, and give the minimum feasible budget
+and capacity below which the plan is infeasible.
 For a "finansal özet" / money question — ciro, brüt kâr/marj, stok azaltımının ₺
 tasarrufu, stok devir hızı, promosyon ROI — call finansal_ozet and report the figures
 in ₺. State that the gross-margin and holding-cost rates are assumptions from the

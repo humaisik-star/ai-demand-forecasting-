@@ -535,7 +535,7 @@ TOOL_SPECS = [
         "type": "function",
         "function": {
             "name": "optimizasyon_onerisi",
-            "description": "Multi-store stock-ALLOCATION optimisation result from a real linear program (PuLP): under a procurement budget, warehouse-capacity limit and minimum service level, it decides how many units to allocate to each store-product to minimise total holding + stockout cost. Call for 'optimizasyon önerisi', 'stok tahsisi', 'bütçeyle en iyi dağıtım'. Returns the summary (budget/capacity used, total cost, service level, savings vs an even-cut baseline) and the biggest recommended orders.",
+            "description": "Multi-store stock-ALLOCATION optimisation result from a real linear program (PuLP): under a procurement budget, warehouse-capacity limit and minimum service level, it decides how many units to allocate to each store-product to minimise total holding + stockout cost. Call for 'optimizasyon önerisi', 'stok tahsisi', 'bütçeyle en iyi dağıtım', and ALSO for feasibility/sensitivity ('duyarlılık analizi', 'gölge fiyat', 'ne zaman infeasible olur'). Returns the summary — budget/capacity used, total cost, service level, savings vs an even-cut baseline, budget/capacity shadow prices, the min feasible budget/capacity, and a budget-sweep sensitivity curve — plus the biggest recommended orders.",
             "parameters": {"type": "object", "properties": {"top_n": {"type": "integer", "default": 8}}},
         },
     },

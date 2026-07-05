@@ -545,6 +545,8 @@
         opt_service: "Ort. hizmet seviyesi", opt_budget: "Bütçe kullanımı", opt_cost: "Toplam beklenen maliyet",
         opt_savings: "Tasarruf (eşit-dağıtıma karşı)", opt_orders_title: "En büyük sipariş önerileri",
         opt_th_target: "Hedef", opt_th_alloc: "Tahsis", opt_th_order: "Önerilen sipariş", opt_th_fill: "Doluluk",
+        opt_sens: "Duyarlılık", opt_shadow: "Bütçe gölge fiyatı", opt_binding: "kısıt bağlayıcı", opt_slack: "kısıt gevşek",
+        opt_feasibility: "Feasibility eşiği", opt_budget_min: "bütçe", opt_cap_min: "kapasite",
         f_search: "🔍 Mağaza / ürün ara...", f_all_stores: "Tüm mağazalar", f_all_abc: "Tüm ABC", f_all_status: "Tüm durumlar",
         th_store: "Mağaza", th_product: "Ürün", th_revenue: "Yıllık ciro", th_reorder: "Reorder",
         th_current: "Mevcut", th_days: "Gün", th_status: "Durum", tbl_count: "ürün gösteriliyor", class_prefix: "Sınıf",
@@ -595,6 +597,8 @@
         opt_service: "Avg service level", opt_budget: "Budget used", opt_cost: "Total expected cost",
         opt_savings: "Savings (vs even split)", opt_orders_title: "Largest recommended orders",
         opt_th_target: "Target", opt_th_alloc: "Allocation", opt_th_order: "Recommended order", opt_th_fill: "Fill",
+        opt_sens: "Sensitivity", opt_shadow: "Budget shadow price", opt_binding: "constraint binding", opt_slack: "constraint slack",
+        opt_feasibility: "Feasibility floor", opt_budget_min: "budget", opt_cap_min: "capacity",
         f_search: "🔍 Search store / product...", f_all_stores: "All stores", f_all_abc: "All ABC", f_all_status: "All statuses",
         th_store: "Store", th_product: "Product", th_revenue: "Annual revenue", th_reorder: "Reorder",
         th_current: "Current", th_days: "Days", th_status: "Status", tbl_count: "products shown", class_prefix: "Class",
@@ -778,6 +782,14 @@
         [fmt(Math.round(s.total_cost || 0)), T("opt_cost"), ""],
         [`${s.savings_pct ?? 0}%`, T("opt_savings"), "good"],
       ].map(([v, l, c]) => `<div class="opt-stat"><b class="${c}">${v}</b><span>${l}</span></div>`).join("");
+      // Feasibility & sensitivity note (shadow prices + infeasibility floor).
+      const money = v => "₺" + fmt(Math.round(v || 0));
+      const bind = s.budget_binding ? T("opt_binding") : T("opt_slack");
+      const sensNote =
+        `<p class="opt-desc" style="margin-top:12px">🔎 ${T("opt_sens")}: ` +
+        `${T("opt_shadow")} <b>${money(s.budget_shadow_price != null ? s.budget_shadow_price : 0)}</b> ` +
+        `/ +₺1 (${bind}). ${T("opt_feasibility")}: ${T("opt_budget_min")} ≥ <b>${money(s.min_feasible_budget)}</b>, ` +
+        `${T("opt_cap_min")} ≥ <b>${fmt(s.min_feasible_capacity || 0)}</b>.</p>`;
       const top = rows.slice().sort((a, b) => b.recommended_order - a.recommended_order).slice(0, 8);
       const head = `<tr><th>${T("th_store")}</th><th>${T("th_product")}</th><th>ABC</th>` +
         `<th class="num">${T("opt_th_target")}</th><th class="num">${T("opt_th_alloc")}</th>` +
@@ -793,7 +805,8 @@
       $("#optCard").innerHTML =
         `<p class="opt-desc">${T("opt_desc")}</p>
          <div class="opt-stats">${tiles}</div>
-         <h3 style="margin:0 0 8px;font-size:14px">${T("opt_orders_title")}</h3>
+         ${sensNote}
+         <h3 style="margin:14px 0 8px;font-size:14px">${T("opt_orders_title")}</h3>
          <div class="opt-orders"><table><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
     }
 

@@ -1,0 +1,8 @@
+budget_frac,budget,status,total_cost,avg_service_fill_pct,budget_shadow_price
+0.4,2351463.0,Infeasible,,,
+0.5,2939329.0,Optimal,4007122.08,50.0,1.4952
+0.6,3527194.0,Optimal,3128142.09,56.8,1.4952
+0.7,4115060.0,Optimal,2249162.09,65.2,1.4952
+0.8,4702926.0,Optimal,1370182.08,72.2,1.4952
+0.9,5290791.0,Optimal,497191.08,79.9,0.8952
+1.0,5878657.0,Optimal,128759.25,90.6,0.0

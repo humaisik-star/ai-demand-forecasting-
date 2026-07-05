@@ -14,6 +14,70 @@
   "baseline_cost": 1619760.04,
   "savings_vs_baseline": 249577.96,
   "savings_pct": 15.4,
+  "budget_shadow_price": 1.4952,
+  "capacity_shadow_price": 0.0,
+  "budget_binding": true,
+  "capacity_binding": false,
+  "min_feasible_budget": 2939328.5,
+  "min_feasible_capacity": 45752,
   "horizon_days": 7,
-  "full_target_cost": 5878657.01
+  "full_target_cost": 5878657.01,
+  "sensitivity": [
+    {
+      "budget_frac": 0.4,
+      "budget": 2351463.0,
+      "status": "Infeasible",
+      "total_cost": null,
+      "avg_service_fill_pct": null,
+      "budget_shadow_price": null
+    },
+    {
+      "budget_frac": 0.5,
+      "budget": 2939329.0,
+      "status": "Optimal",
+      "total_cost": 4007122.08,
+      "avg_service_fill_pct": 50.0,
+      "budget_shadow_price": 1.4952
+    },
+    {
+      "budget_frac": 0.6,
+      "budget": 3527194.0,
+      "status": "Optimal",
+      "total_cost": 3128142.09,
+      "avg_service_fill_pct": 56.8,
+      "budget_shadow_price": 1.4952
+    },
+    {
+      "budget_frac": 0.7,
+      "budget": 4115060.0,
+      "status": "Optimal",
+      "total_cost": 2249162.09,
+      "avg_service_fill_pct": 65.2,
+      "budget_shadow_price": 1.4952
+    },
+    {
+      "budget_frac": 0.8,
+      "budget": 4702926.0,
+      "status": "Optimal",
+      "total_cost": 1370182.08,
+      "avg_service_fill_pct": 72.2,
+      "budget_shadow_price": 1.4952
+    },
+    {
+      "budget_frac": 0.9,
+      "budget": 5290791.0,
+      "status": "Optimal",
+      "total_cost": 497191.08,
+      "avg_service_fill_pct": 79.9,
+      "budget_shadow_price": 0.8952
+    },
+    {
+      "budget_frac": 1.0,
+      "budget": 5878657.0,
+      "status": "Optimal",
+      "total_cost": 128759.25,
+      "avg_service_fill_pct": 90.6,
+      "budget_shadow_price": 0.0
+    }
+  ]
 }

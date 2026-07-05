@@ -126,6 +126,18 @@ def optimize_allocation(df, budget, capacity, min_service=0.5,
     prob.solve(pulp.PULP_CBC_CMD(msg=0))
     status = pulp.LpStatus[prob.status]
 
+    # Shadow prices (constraint duals): ₺ of total cost saved per one extra unit
+    # of the resource. A binding constraint has a positive shadow price; a slack
+    # one is 0 (relaxing it changes nothing).
+    def _shadow(name):
+        try:
+            pi = prob.constraints[name].pi
+            return (round(-float(pi), 4) or 0.0) if pi is not None else 0.0  # avoid -0.0
+        except Exception:
+            return 0.0
+    budget_shadow = _shadow("budget") if status == "Optimal" else 0.0
+    capacity_shadow = _shadow("capacity") if status == "Optimal" else 0.0
+
     alloc = np.array([x[i].value() if x[i].value() is not None else 0.0
                       for i in range(n)])
     alloc_units = np.round(alloc).astype(int)
@@ -169,8 +181,63 @@ def optimize_allocation(df, budget, capacity, min_service=0.5,
         "baseline_cost": round(base_cost, 2),
         "savings_vs_baseline": round(base_cost - opt_cost, 2),
         "savings_pct": round((base_cost - opt_cost) / base_cost * 100, 1) if base_cost > 0 else 0.0,
+        # Feasibility & sensitivity
+        "budget_shadow_price": budget_shadow,
+        "capacity_shadow_price": capacity_shadow,
+        "budget_binding": bool(budget_shadow > 1e-6),
+        "capacity_binding": bool(capacity_shadow > 1e-6),
+        "min_feasible_budget": round(min_service * full_cost, 2),
+        "min_feasible_capacity": int(np.ceil(min_service * float(tau.sum()))),
     }
     return out, summary
+
+
+def sensitivity_analysis(df, budget, capacity, min_service=0.5, holding_rate=0.25,
+                         penalty_mult=1.5, horizon=7, n_points=7):
+    """Trace how the optimum responds as the budget is scaled, and pin down the
+    infeasibility thresholds and shadow prices.
+
+    Returns a dict with the two feasibility floors (below which no plan exists),
+    the base-case shadow prices, and a budget-sweep curve of total cost, service
+    and the budget shadow price at each level.
+    """
+    price = df["price"].to_numpy()
+    tau = df["tau"].to_numpy()
+    full_cost = float((price * tau).sum())
+    full_units = float(tau.sum())
+    min_budget = min_service * full_cost
+    min_units = min_service * full_units
+
+    # Sweep from just below the feasibility floor up to the full-target cost.
+    fracs = np.linspace(0.4, 1.0, n_points)
+    curve = []
+    for f in fracs:
+        b = f * full_cost
+        _, s = optimize_allocation(df, budget=b, capacity=capacity,
+                                   min_service=min_service, holding_rate=holding_rate,
+                                   penalty_mult=penalty_mult, horizon=horizon)
+        feasible = s["solver_status"] == "Optimal"
+        curve.append({
+            "budget_frac": round(float(f), 3),
+            "budget": round(b, 0),
+            "status": s["solver_status"],
+            "total_cost": s["total_cost"] if feasible else None,
+            "avg_service_fill_pct": s["avg_service_fill_pct"] if feasible else None,
+            "budget_shadow_price": s["budget_shadow_price"] if feasible else None,
+        })
+
+    _, base = optimize_allocation(df, budget=budget, capacity=capacity,
+                                  min_service=min_service, holding_rate=holding_rate,
+                                  penalty_mult=penalty_mult, horizon=horizon)
+    return {
+        "min_feasible_budget": round(min_budget, 2),
+        "min_feasible_capacity": int(np.ceil(min_units)),
+        "budget_shadow_price": base["budget_shadow_price"],
+        "capacity_shadow_price": base["capacity_shadow_price"],
+        "budget_binding": base["budget_binding"],
+        "capacity_binding": base["capacity_binding"],
+        "curve": curve,
+    }
 
 
 def _plot(out, path):
@@ -191,6 +258,34 @@ def _plot(out, path):
     plt.close()
 
 
+def _plot_sensitivity(sens, summary, path):
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    feas = [c for c in sens["curve"] if c["total_cost"] is not None]
+    infeas = [c for c in sens["curve"] if c["total_cost"] is None]
+    bx = [c["budget"] / 1e6 for c in feas]
+    fig, ax = plt.subplots(figsize=(9, 5))
+    ax.plot(bx, [c["total_cost"] / 1e6 for c in feas], "o-", color="#2f9e63",
+            label="Total expected cost (₺M)")
+    ax.set_xlabel("Budget (₺M)")
+    ax.set_ylabel("Total expected cost (₺M)", color="#2f9e63")
+    ax.axvline(summary["min_feasible_budget"] / 1e6, ls="--", color="#e05a44",
+               label="Feasibility floor")
+    for c in infeas:
+        ax.axvspan(c["budget"] / 1e6 - 0.05, c["budget"] / 1e6 + 0.05, color="#e05a44", alpha=0.08)
+    ax2 = ax.twinx()
+    ax2.plot(bx, [c["avg_service_fill_pct"] for c in feas], "s--", color="#94a3b8",
+             label="Service fill %")
+    ax2.set_ylabel("Service fill %", color="#94a3b8")
+    ax.set_title("Sensitivity: cost & service vs budget (infeasible below the floor)")
+    ax.legend(loc="upper right")
+    plt.tight_layout()
+    plt.savefig(path, dpi=120)
+    plt.close()
+
+
 def main(budget_frac=0.8, capacity_frac=0.9, min_service=0.5,
          holding_rate=0.25, penalty_mult=1.5, horizon=7, service_z=1.64):
     df = load_skus(horizon=horizon, service_z=service_z)
@@ -205,11 +300,19 @@ def main(budget_frac=0.8, capacity_frac=0.9, min_service=0.5,
     summary["horizon_days"] = horizon
     summary["full_target_cost"] = round(full_cost, 2)
 
+    # Feasibility / sensitivity: thresholds, shadow prices, and a budget sweep.
+    sens = sensitivity_analysis(df, budget=budget, capacity=capacity,
+                                min_service=min_service, holding_rate=holding_rate,
+                                penalty_mult=penalty_mult, horizon=horizon)
+    summary["sensitivity"] = sens["curve"]
+
     RESULTS_DIR.mkdir(exist_ok=True)
     out.to_csv(RESULTS_DIR / "optimization_allocation.csv", index=False)
+    pd.DataFrame(sens["curve"]).to_csv(RESULTS_DIR / "optimization_sensitivity.csv", index=False)
     with open(RESULTS_DIR / "optimization_summary.json", "w") as f:
         json.dump(summary, f, indent=2)
     _plot(out, RESULTS_DIR / "18_optimization_allocation.png")
+    _plot_sensitivity(sens, summary, RESULTS_DIR / "20_optimization_sensitivity.png")
 
     print(f"Solver: {summary['solver_status']}  |  SKUs: {summary['n_skus']}")
     print(f"Budget {summary['budget']:,.0f} -> used {summary['budget_used']:,.0f} "
@@ -221,9 +324,17 @@ def main(budget_frac=0.8, capacity_frac=0.9, min_service=0.5,
           f"{summary['skus_at_full_target']}/{summary['n_skus']} SKUs at full target")
     print(f"Savings vs even-cut baseline: {summary['savings_vs_baseline']:,.0f} "
           f"({summary['savings_pct']}%)")
+    print(f"Budget shadow price: ₺{summary['budget_shadow_price']:.3f} saved per +₺1 budget "
+          f"({'binding' if summary['budget_binding'] else 'slack'})  |  "
+          f"capacity shadow: {summary['capacity_shadow_price']:.3f} "
+          f"({'binding' if summary['capacity_binding'] else 'slack'})")
+    print(f"Feasibility floor: budget >= ₺{summary['min_feasible_budget']:,.0f}, "
+          f"capacity >= {summary['min_feasible_capacity']:,} units (else infeasible)")
     print(f"\nSaved -> {RESULTS_DIR/'optimization_allocation.csv'}, "
           f"{RESULTS_DIR/'optimization_summary.json'}, "
-          f"{RESULTS_DIR/'18_optimization_allocation.png'}")
+          f"{RESULTS_DIR/'optimization_sensitivity.csv'}, "
+          f"{RESULTS_DIR/'18_optimization_allocation.png'}, "
+          f"{RESULTS_DIR/'20_optimization_sensitivity.png'}")
 
 
 if __name__ == "__main__":
