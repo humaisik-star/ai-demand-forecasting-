@@ -95,6 +95,17 @@
       color: var(--text); border-radius: var(--radius-sm); padding: 8px; font-size: 12.5px; font-weight: 600;
       cursor: pointer; transition: all .15s; }
     .notif-foot button:hover { border-color: var(--accent); color: var(--accent); }
+    /* Overflow "⋯" menu (secondary actions) */
+    .menu-wrap { position: relative; }
+    .menu-panel { position: absolute; top: 46px; right: 0; min-width: 190px; background: var(--surface);
+      border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-md);
+      z-index: 45; padding: 6px; display: none; animation: rise .16s ease; }
+    .menu-panel.open { display: block; }
+    .menu-item { display: flex; align-items: center; gap: 9px; width: 100%; text-align: left;
+      border: none; background: transparent; color: var(--text); font-size: 13.5px; font-weight: 500;
+      padding: 9px 11px; border-radius: var(--radius-sm); cursor: pointer; text-decoration: none;
+      transition: background .12s; box-sizing: border-box; }
+    .menu-item:hover { background: var(--surface-2); }
     main { max-width: 1160px; margin: 0 auto; padding: 22px 20px 24px; }
     .panel { display: none; }
     .panel.active { display: block; animation: fade .2s; }
@@ -161,14 +172,14 @@
     /* Empty state */
     .empty-state { height: 100%; display: flex; flex-direction: column; align-items: center;
       justify-content: center; text-align: center; padding: 16px; }
-    .es-logo { width: 56px; height: 56px; border-radius: var(--radius); display: grid; place-items: center;
-      font-size: 28px; background: linear-gradient(135deg, var(--accent), var(--b)); margin-bottom: 14px; box-shadow: var(--shadow-md); }
-    .empty-state h2 { margin: 0 0 6px; font-size: 22px; }
-    .empty-state p { color: var(--muted); margin: 0 0 22px; max-width: 430px; line-height: 1.5; }
-    .es-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; max-width: 460px; }
+    .es-logo { width: 62px; height: 62px; border-radius: var(--radius); display: grid; place-items: center;
+      font-size: 31px; background: linear-gradient(135deg, var(--accent), var(--b)); margin-bottom: 20px; box-shadow: var(--shadow-md); }
+    .empty-state h2 { margin: 0 0 10px; font-size: 24px; }
+    .empty-state p { color: var(--muted); margin: 0 0 32px; max-width: 440px; line-height: 1.6; }
+    .es-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; width: 100%; max-width: 480px; }
     .es-card { text-align: left; background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 14px 16px; cursor: pointer; box-shadow: var(--shadow);
-      transition: transform .15s, box-shadow .15s, border-color .15s; display: flex; flex-direction: column; gap: 3px; }
+      border-radius: var(--radius); padding: 17px 19px; cursor: pointer; box-shadow: var(--shadow);
+      transition: transform .15s, box-shadow .15s, border-color .15s; display: flex; flex-direction: column; gap: 4px; }
     .es-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--accent); }
     .es-card b { font-size: 14px; } .es-card span { font-size: 12px; color: var(--muted); }
     .msg { display: flex; margin-bottom: 16px; animation: rise .28s ease; }
@@ -208,7 +219,7 @@
     .minichart .lg { display: flex; gap: 14px; font-size: 11px; color: var(--muted); margin-top: 4px; }
     .minichart .lg i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
     /* Composer — pinned to the bottom of the chat column */
-    .composer { flex-shrink: 0; padding-top: 12px; }
+    .composer { flex-shrink: 0; padding-top: 18px; }
     .chips { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 10px; }
     .chip { font-size: 12.5px; color: var(--muted); background: var(--surface); border: 1px solid var(--border);
       border-radius: 999px; padding: 7px 13px; cursor: pointer; transition: all .15s; box-shadow: var(--shadow); }
@@ -313,7 +324,6 @@
         <button class="tab" data-tab="about" data-i18n="tab_about">ℹ️ Hakkında</button>
       </nav>
       <div class="spacer"></div>
-      <button class="theme-btn" id="histBtn" data-i18n-title="hist_tip" title="Sohbet geçmişi">🕘</button>
       <div class="bell-wrap">
         <button class="theme-btn" id="bellBtn" data-i18n-title="bell_tip" title="Bildirimler">🔔<span class="bell-badge" id="bellBadge" style="display:none">0</span></button>
         <div class="notif-panel" id="notifPanel">
@@ -322,9 +332,15 @@
           <div class="notif-foot"><button id="notifChat" data-i18n="notif_chat">Sohbette listele</button></div>
         </div>
       </div>
-      <a class="pdf-btn" href="/report.pdf" data-i18n="pdf_btn">📄 PDF rapor</a>
       <button class="lang-btn" id="langBtn" title="Language / Dil">EN</button>
       <button class="theme-btn" id="theme" title="Tema">🌙</button>
+      <div class="menu-wrap">
+        <button class="theme-btn" id="menuBtn" data-i18n-title="menu_tip" title="Menü">⋯</button>
+        <div class="menu-panel" id="menuPanel">
+          <a class="menu-item" href="/report.pdf" data-i18n="pdf_btn">📄 PDF rapor</a>
+          <button class="menu-item" id="menuHist" data-i18n="menu_hist">🕘 Sohbet geçmişi</button>
+        </div>
+      </div>
     </div>
   </header>
 
@@ -342,7 +358,6 @@
   <main>
     <!-- CHAT -->
     <section class="panel active" id="chat-panel">
-      <div class="kpi-strip" id="kpiStrip"></div>
       <div id="chat">
         <div class="empty-state" id="emptyState">
           <div class="es-logo">📦</div>
@@ -462,6 +477,7 @@
         crit_q: "Kritik stoktaki ürünleri listele",
         bell_tip: "Bildirimler", notif_title: "Kritik & yeniden sipariş", notif_chat: "Sohbette listele",
         notif_empty: "Kritik veya yeniden sipariş ürün yok. 🎉",
+        menu_tip: "Menü", menu_hist: "🕘 Sohbet geçmişi",
         fu_label: "Bunu da sorabilirsin:", copy: "📋 Kopyala", copied: "✓ Kopyalandı",
         err: "⚠️ Bir aksaklık oldu, lütfen birkaç saniye sonra tekrar dene.", empty: "İşte istediğin sonuçlar 👇", unit_adet: "adet",
         hist_title: "Sohbet geçmişi", hist_new: "＋ Yeni sohbet", hist_empty: "Henüz kayıtlı sohbet yok.",
@@ -497,6 +513,7 @@
         crit_q: "List the critically low products",
         bell_tip: "Notifications", notif_title: "Critical & reorder", notif_chat: "List in chat",
         notif_empty: "No critical or reorder items. 🎉",
+        menu_tip: "Menu", menu_hist: "🕘 Chat history",
         fu_label: "You could also ask:", copy: "📋 Copy", copied: "✓ Copied",
         err: "⚠️ Something went wrong, please try again in a moment.", empty: "Here are your results 👇", unit_adet: "units",
         hist_title: "Chat history", hist_new: "＋ New chat", hist_empty: "No saved chats yet.",
@@ -559,7 +576,6 @@
       if (typeof renderNotif === "function") renderNotif();
       document.querySelectorAll(".es-card").forEach(c => { const v = d[c.dataset.qk]; if (v != null) c.dataset.q = v; });
       langBtn.textContent = LANG === "tr" ? "EN" : "TR";
-      if (typeof lastKpi !== "undefined" && lastKpi) renderKpiStrip(lastKpi);
       if (typeof dashLoaded !== "undefined" && dashLoaded) {
         renderDashCards();
         const so = $("#fStore"); if (so.options[0]) so.options[0].textContent = T("f_all_stores");
@@ -972,23 +988,24 @@
     const drawer = $("#histDrawer"), overlay = $("#histOverlay");
     const openDrawer = () => { renderChatList(); drawer.classList.add("open"); overlay.classList.add("open"); };
     const closeDrawer = () => { drawer.classList.remove("open"); overlay.classList.remove("open"); };
-    const toggleDrawer = () => drawer.classList.contains("open") ? closeDrawer() : openDrawer();
-    $("#histBtn").onclick = toggleDrawer;
     $("#histClose").onclick = closeDrawer;
     overlay.onclick = closeDrawer;
     $("#newChat").onclick = startNewChat;
     addEventListener("keydown", e => { if (e.key === "Escape") closeDrawer(); });
     renderChatList();
 
-    // Top KPI strip
+    // Overflow "⋯" menu (PDF report + chat history)
+    const menuBtn = $("#menuBtn"), menuPanel = $("#menuPanel");
+    const closeMenu = () => menuPanel.classList.remove("open");
+    menuBtn.onclick = e => { e.stopPropagation(); menuPanel.classList.toggle("open"); };
+    document.addEventListener("click", e => {
+      if (menuPanel.classList.contains("open") && !menuPanel.contains(e.target) && e.target !== menuBtn) closeMenu();
+    });
+    addEventListener("keydown", e => { if (e.key === "Escape") closeMenu(); });
+    $("#menuHist").onclick = () => { closeMenu(); openDrawer(); };
+
+    // KPI numbers live on the Dashboard tab now; the chat screen stays clean.
     let lastKpi = null;
-    function renderKpiStrip(k) {
-      $("#kpiStrip").innerHTML = [
-        [`${pct(k.inventory_reduction_pct)} ↓`, T("kpi_reduction")],
-        [`${pct(k.avg_service_level_pct)}`, T("kpi_service")],
-        [fmt(76000), T("kpi_records")],
-      ].map(([v, l]) => `<div class="k"><b>${v}</b><span>${l}</span></div>`).join("");
-    }
 
     // ---- Critical-stock notification bell + dropdown ----
     const bellBtn = $("#bellBtn"), bellBadge = $("#bellBadge"), notifPanel = $("#notifPanel");
@@ -1031,8 +1048,8 @@
       input.value = T("crit_q"); submit();
     };
     (async () => {
-      try { lastKpi = await (await fetch(API + "/api/kpis")).json(); renderKpiStrip(lastKpi); updateBell(lastKpi); }
-      catch { $("#kpiStrip").style.display = "none"; }
+      try { lastKpi = await (await fetch(API + "/api/kpis")).json(); updateBell(lastKpi); }
+      catch {}
       loadNotif();
     })();
 
