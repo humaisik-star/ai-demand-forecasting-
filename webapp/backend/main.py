@@ -115,6 +115,10 @@ Reply in the user's language (Turkish by default)."""
 
 MAX_TOKENS = 2600  # ceiling covering reasoning + answer (gpt-5 reasons before writing)
 
+# Brand colour for the PDF report — single source, matches the CSS --primary (#2563EB).
+PRIMARY_RGB = (37, 99, 235)
+PRIMARY_TINT = (226, 232, 254)  # light indigo fill for table headers
+
 app = FastAPI(title="Demand & Stock Assistant API")
 
 app.add_middleware(
@@ -370,9 +374,12 @@ def report_pdf():
     def a(s):
         return str(s).translate(_TR_ASCII)
 
-    def line(h, text, size=11, style="", grey=False):
+    def line(h, text, size=11, style="", grey=False, color=None):
         pdf.set_font("Helvetica", style, size)
-        pdf.set_text_color(120, 120, 120) if grey else pdf.set_text_color(0, 0, 0)
+        if color:
+            pdf.set_text_color(*color)
+        else:
+            pdf.set_text_color(120, 120, 120) if grey else pdf.set_text_color(0, 0, 0)
         pdf.multi_cell(0, h, a(text), new_x=XPos.LMARGIN, new_y=YPos.NEXT)
 
     inv = _csv("inventory_analytics.csv").sort_values("annual_revenue", ascending=False)
@@ -385,7 +392,7 @@ def report_pdf():
     pdf = FPDF()
     pdf.add_page()
     pdf.set_auto_page_break(True, 15)
-    line(10, "Talep & Stok Raporu", size=16, style="B")
+    line(10, "Talep & Stok Raporu", size=16, style="B", color=PRIMARY_RGB)
     line(6, f"Olusturuldu: {datetime.now(timezone.utc):%Y-%m-%d %H:%M} UTC", size=9, grey=True)
     pdf.ln(2)
     line(6, f"Toplam SKU: {len(inv)}    Kritik: {int(counts.get('CRITICAL', 0))}    "
@@ -396,11 +403,13 @@ def report_pdf():
     cols = [("Magaza", 22), ("Urun", 22), ("ABC", 14), ("Reorder", 26),
             ("Mevcut", 22), ("Gun", 16), ("Durum", 26)]
     pdf.set_font("Helvetica", "B", 9)
-    pdf.set_fill_color(240, 243, 247)
+    pdf.set_fill_color(*PRIMARY_TINT)
+    pdf.set_text_color(*PRIMARY_RGB)
     for name, w in cols:
         pdf.cell(w, 8, name, border=1, fill=True)
     pdf.ln()
     pdf.set_font("Helvetica", "", 8)
+    pdf.set_text_color(0, 0, 0)
     for _, r in inv.head(32).iterrows():
         vals = [r["Store ID"], r["Product ID"], r["abc_class"], f"{r['reorder_point']:.0f}",
                 f"{r['current_inventory']:.0f}", f"{r['days_of_cover']:.1f}", r["alert_status"]]
