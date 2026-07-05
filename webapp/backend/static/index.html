@@ -68,15 +68,33 @@
       height: 38px; min-width: 42px; padding: 0 10px; border-radius: var(--radius-sm); cursor: pointer;
       font-size: 13px; font-weight: 700; transition: all .15s; }
     .lang-btn:hover { border-color: var(--accent); color: var(--accent); }
-    /* Critical stock auto-alert banner */
-    .alert-banner { display: none; align-items: center; gap: 10px; margin-bottom: 12px;
-      background: color-mix(in srgb, var(--crit) 13%, transparent);
-      border: 1px solid color-mix(in srgb, var(--crit) 42%, transparent); color: var(--crit);
-      border-radius: var(--radius-sm); padding: 10px 14px; font-size: 13.5px; animation: rise .3s ease; }
-    .alert-banner .b-act { margin-left: auto; display: flex; gap: 8px; }
-    .alert-banner button { background: transparent; border: 1px solid currentColor; color: inherit;
-      border-radius: 8px; padding: 4px 11px; font-size: 12px; cursor: pointer; }
-    .alert-banner button:hover { background: color-mix(in srgb, var(--crit) 14%, transparent); }
+    /* Critical-stock notification bell + dropdown */
+    .bell-wrap { position: relative; }
+    .bell-badge { position: absolute; top: -5px; right: -5px; min-width: 18px; height: 18px;
+      padding: 0 4px; border-radius: 9px; background: var(--crit); color: #fff; font-size: 11px;
+      font-weight: 700; line-height: 18px; text-align: center; box-shadow: 0 0 0 2px var(--surface);
+      pointer-events: none; }
+    .notif-panel { position: absolute; top: 46px; right: 0; width: 340px; max-width: 86vw;
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      box-shadow: var(--shadow-md); z-index: 45; overflow: hidden; display: none; animation: rise .18s ease; }
+    .notif-panel.open { display: block; }
+    .notif-head { display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 14px; border-bottom: 1px solid var(--border); font-weight: 700; font-size: 14px; }
+    .notif-head .nh-count { font-size: 12px; font-weight: 600; color: var(--crit);
+      background: color-mix(in srgb, var(--crit) 13%, transparent); border-radius: 999px; padding: 2px 9px; }
+    .notif-body { max-height: 340px; overflow-y: auto; }
+    .notif-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+      border-bottom: 1px solid var(--border); }
+    .notif-item:last-child { border-bottom: none; }
+    .notif-item .ni-main { flex: 1; min-width: 0; }
+    .notif-item .ni-main b { font-size: 13px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .notif-item .ni-sub { font-size: 11.5px; color: var(--muted); }
+    .notif-empty { color: var(--muted); font-size: 13px; text-align: center; padding: 26px 12px; }
+    .notif-foot { padding: 10px 14px; border-top: 1px solid var(--border); }
+    .notif-foot button { width: 100%; border: 1px solid var(--border); background: var(--surface-2);
+      color: var(--text); border-radius: var(--radius-sm); padding: 8px; font-size: 12.5px; font-weight: 600;
+      cursor: pointer; transition: all .15s; }
+    .notif-foot button:hover { border-color: var(--accent); color: var(--accent); }
     main { max-width: 1160px; margin: 0 auto; padding: 22px 20px 24px; }
     .panel { display: none; }
     .panel.active { display: block; animation: fade .2s; }
@@ -293,6 +311,14 @@
       </nav>
       <div class="spacer"></div>
       <button class="theme-btn" id="histBtn" data-i18n-title="hist_tip" title="Sohbet geçmişi">🕘</button>
+      <div class="bell-wrap">
+        <button class="theme-btn" id="bellBtn" data-i18n-title="bell_tip" title="Bildirimler">🔔<span class="bell-badge" id="bellBadge" style="display:none">0</span></button>
+        <div class="notif-panel" id="notifPanel">
+          <div class="notif-head"><span data-i18n="notif_title">Kritik &amp; yeniden sipariş</span><span class="nh-count" id="notifCount"></span></div>
+          <div class="notif-body" id="notifBody"></div>
+          <div class="notif-foot"><button id="notifChat" data-i18n="notif_chat">Sohbette listele</button></div>
+        </div>
+      </div>
       <a class="pdf-btn" href="/report.pdf" data-i18n="pdf_btn">📄 PDF rapor</a>
       <button class="lang-btn" id="langBtn" title="Language / Dil">EN</button>
       <button class="theme-btn" id="theme" title="Tema">🌙</button>
@@ -313,7 +339,6 @@
   <main>
     <!-- CHAT -->
     <section class="panel active" id="chat-panel">
-      <div class="alert-banner" id="critBanner"></div>
       <div class="kpi-strip" id="kpiStrip"></div>
       <div id="chat">
         <div class="empty-state" id="emptyState">
@@ -432,6 +457,8 @@
         d_reorder: "Reorder uyarısı", d_reorder_s: "SKU sipariş bekliyor", d_a: "A-sınıfı SKU", d_a_s: "cironun ~%80'i",
         crit_a: "ürün kritik stokta — stok-out riski var.", crit_view: "Detayı gör", crit_close: "Kapat",
         crit_q: "Kritik stoktaki ürünleri listele",
+        bell_tip: "Bildirimler", notif_title: "Kritik & yeniden sipariş", notif_chat: "Sohbette listele",
+        notif_empty: "Kritik veya yeniden sipariş ürün yok. 🎉",
         fu_label: "Bunu da sorabilirsin:", copy: "📋 Kopyala", copied: "✓ Kopyalandı",
         err: "⚠️ Bir aksaklık oldu, lütfen birkaç saniye sonra tekrar dene.", empty: "İşte istediğin sonuçlar 👇", unit_adet: "adet",
         hist_title: "Sohbet geçmişi", hist_new: "＋ Yeni sohbet", hist_empty: "Henüz kayıtlı sohbet yok.",
@@ -465,6 +492,8 @@
         d_reorder: "Reorder alerts", d_reorder_s: "SKUs awaiting order", d_a: "Class-A SKUs", d_a_s: "~80% of revenue",
         crit_a: "products are critically low — stockout risk.", crit_view: "View details", crit_close: "Dismiss",
         crit_q: "List the critically low products",
+        bell_tip: "Notifications", notif_title: "Critical & reorder", notif_chat: "List in chat",
+        notif_empty: "No critical or reorder items. 🎉",
         fu_label: "You could also ask:", copy: "📋 Copy", copied: "✓ Copied",
         err: "⚠️ Something went wrong, please try again in a moment.", empty: "Here are your results 👇", unit_adet: "units",
         hist_title: "Chat history", hist_new: "＋ New chat", hist_empty: "No saved chats yet.",
@@ -524,6 +553,7 @@
       document.querySelectorAll("[data-i18n-html]").forEach(e => { const v = d[e.dataset.i18nHtml]; if (v != null) e.innerHTML = v; });
       document.querySelectorAll("[data-i18n-title]").forEach(e => { const v = d[e.dataset.i18nTitle]; if (v != null) e.title = v; });
       if (typeof renderChatList === "function") renderChatList();
+      if (typeof renderNotif === "function") renderNotif();
       document.querySelectorAll(".es-card").forEach(c => { const v = d[c.dataset.qk]; if (v != null) c.dataset.q = v; });
       langBtn.textContent = LANG === "tr" ? "EN" : "TR";
       if (typeof lastKpi !== "undefined" && lastKpi) renderKpiStrip(lastKpi);
@@ -946,7 +976,7 @@
     addEventListener("keydown", e => { if (e.key === "Escape") closeDrawer(); });
     renderChatList();
 
-    // Top KPI strip + automatic critical-stock banner
+    // Top KPI strip
     let lastKpi = null;
     function renderKpiStrip(k) {
       $("#kpiStrip").innerHTML = [
@@ -954,22 +984,52 @@
         [`${pct(k.avg_service_level_pct)}`, T("kpi_service")],
         [fmt(76000), T("kpi_records")],
       ].map(([v, l]) => `<div class="k"><b>${v}</b><span>${l}</span></div>`).join("");
-      renderCritBanner(k);
     }
-    function renderCritBanner(k) {
-      const bn = $("#critBanner");
-      if (k.critical_alerts > 0) {
-        bn.innerHTML = `⚠️ <b>${k.critical_alerts}</b> ${esc(T("crit_a"))}` +
-          `<span class="b-act"><button id="critView">${esc(T("crit_view"))}</button>` +
-          `<button id="critX">${esc(T("crit_close"))}</button></span>`;
-        bn.style.display = "flex";
-        $("#critView").onclick = () => { input.value = T("crit_q"); submit(); };
-        $("#critX").onclick = () => (bn.style.display = "none");
-      } else bn.style.display = "none";
+
+    // ---- Critical-stock notification bell + dropdown ----
+    const bellBtn = $("#bellBtn"), bellBadge = $("#bellBadge"), notifPanel = $("#notifPanel");
+    let notifRows = [];
+    function updateBell(k) {
+      const n = (k && k.critical_alerts) || 0;
+      if (n > 0) { bellBadge.textContent = n > 99 ? "99+" : n; bellBadge.style.display = ""; }
+      else bellBadge.style.display = "none";
     }
+    function renderNotif() {
+      const body = $("#notifBody"), cnt = $("#notifCount");
+      cnt.textContent = notifRows.length ? notifRows.length : "";
+      if (!notifRows.length) { body.innerHTML = `<div class="notif-empty">${esc(T("notif_empty"))}</div>`; return; }
+      body.innerHTML = notifRows.slice(0, 60).map(r =>
+        `<div class="notif-item"><div class="ni-main">
+           <b>${esc(r["Store ID"])} · ${esc(r["Product ID"])}</b>
+           <span class="ni-sub">${esc(T("th_current"))}: ${fmt(r.current_inventory)} · ${esc(T("th_days"))}: ${r.days_of_cover}</span>
+         </div><span class="pill ${r.alert_status}">${r.alert_status}</span></div>`).join("");
+    }
+    async function loadNotif() {
+      try {
+        const rows = (await (await fetch(API + "/api/inventory")).json()).rows || [];
+        notifRows = rows.filter(r => r.alert_status === "CRITICAL" || r.alert_status === "REORDER")
+          .sort((a, b) => a.alert_status === b.alert_status
+            ? a.days_of_cover - b.days_of_cover
+            : (a.alert_status === "CRITICAL" ? -1 : 1));
+      } catch { notifRows = []; }
+      renderNotif();
+    }
+    bellBtn.onclick = e => { e.stopPropagation(); notifPanel.classList.toggle("open"); };
+    document.addEventListener("click", e => {
+      if (notifPanel.classList.contains("open") && !notifPanel.contains(e.target) && e.target !== bellBtn)
+        notifPanel.classList.remove("open");
+    });
+    addEventListener("keydown", e => { if (e.key === "Escape") notifPanel.classList.remove("open"); });
+    $("#notifChat").onclick = () => {
+      notifPanel.classList.remove("open");
+      const chatTab = document.querySelector('.tab[data-tab="chat"]');
+      if (chatTab && !chatTab.classList.contains("active")) chatTab.click();
+      input.value = T("crit_q"); submit();
+    };
     (async () => {
-      try { lastKpi = await (await fetch(API + "/api/kpis")).json(); renderKpiStrip(lastKpi); }
+      try { lastKpi = await (await fetch(API + "/api/kpis")).json(); renderKpiStrip(lastKpi); updateBell(lastKpi); }
       catch { $("#kpiStrip").style.display = "none"; }
+      loadNotif();
     })();
 
     // Keep the chat column height correct under the header (handles wrapping).
