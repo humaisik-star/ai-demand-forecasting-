@@ -244,6 +244,35 @@
     .matrix .cell { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm);
       padding: 14px 0; text-align: center; font-weight: 700; font-size: 18px; }
     .matrix .cell small { display: block; font-weight: 500; font-size: 10px; color: var(--muted); margin-top: 2px; }
+    /* Chat history drawer */
+    .drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.42); z-index: 40;
+      opacity: 0; pointer-events: none; transition: opacity .2s; }
+    .drawer-overlay.open { opacity: 1; pointer-events: auto; }
+    .drawer { position: fixed; top: 0; left: 0; height: 100dvh; width: 300px; max-width: 85vw;
+      background: var(--surface); border-right: 1px solid var(--border); box-shadow: var(--shadow-md);
+      z-index: 41; transform: translateX(-100%); transition: transform .22s ease;
+      display: flex; flex-direction: column; padding: 14px; gap: 10px; }
+    .drawer.open { transform: none; }
+    .drawer-head { display: flex; align-items: center; justify-content: space-between;
+      font-weight: 700; font-size: 15px; }
+    .drawer-close { border: none; background: transparent; color: var(--muted); font-size: 17px; cursor: pointer; }
+    .new-chat { border: none; background: var(--accent); color: #fff; border-radius: var(--radius-sm);
+      padding: 10px 12px; cursor: pointer; font-weight: 600; font-size: 13.5px; transition: background .15s; }
+    .new-chat:hover { background: var(--accent-2); }
+    .chat-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; margin-top: 2px; }
+    .chat-item { display: flex; align-items: center; gap: 8px; padding: 9px 10px; border-radius: var(--radius-sm);
+      cursor: pointer; border: 1px solid transparent; transition: background .12s, border-color .12s; }
+    .chat-item:hover { background: var(--surface-2); }
+    .chat-item.active { background: var(--surface-2); border-color: var(--accent); }
+    .chat-item .ci-main { flex: 1; min-width: 0; }
+    .chat-item .ci-title { font-size: 13.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .chat-item .ci-date { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .chat-item .ci-del { border: none; background: transparent; color: var(--muted); cursor: pointer;
+      font-size: 13px; opacity: 0; padding: 3px 5px; border-radius: 6px; transition: opacity .12s, color .12s; }
+    .chat-item:hover .ci-del, .chat-item.active .ci-del { opacity: 1; }
+    .chat-item .ci-del:hover { color: var(--crit); background: color-mix(in srgb, var(--crit) 12%, transparent); }
+    .chat-empty { color: var(--muted); font-size: 13px; text-align: center; padding: 22px 8px; }
+
     @media (max-width: 720px) {
       .grid2 { grid-template-columns: 1fr; } .kpi .value { font-size: 23px; }
       .es-cards { grid-template-columns: 1fr; }
@@ -263,11 +292,23 @@
         <button class="tab" data-tab="about" data-i18n="tab_about">ℹ️ Hakkında</button>
       </nav>
       <div class="spacer"></div>
+      <button class="theme-btn" id="histBtn" data-i18n-title="hist_tip" title="Sohbet geçmişi">🕘</button>
       <a class="pdf-btn" href="/report.pdf" data-i18n="pdf_btn">📄 PDF rapor</a>
       <button class="lang-btn" id="langBtn" title="Language / Dil">EN</button>
       <button class="theme-btn" id="theme" title="Tema">🌙</button>
     </div>
   </header>
+
+  <!-- Chat history drawer -->
+  <div class="drawer-overlay" id="histOverlay"></div>
+  <aside class="drawer" id="histDrawer">
+    <div class="drawer-head">
+      <span data-i18n="hist_title">Sohbet geçmişi</span>
+      <button class="drawer-close" id="histClose" title="Kapat">✕</button>
+    </div>
+    <button class="new-chat" id="newChat" data-i18n="hist_new">＋ Yeni sohbet</button>
+    <div class="chat-list" id="chatList"></div>
+  </aside>
 
   <main>
     <!-- CHAT -->
@@ -393,6 +434,8 @@
         crit_q: "Kritik stoktaki ürünleri listele",
         fu_label: "Bunu da sorabilirsin:", copy: "📋 Kopyala", copied: "✓ Kopyalandı",
         err: "⚠️ Bir aksaklık oldu, lütfen birkaç saniye sonra tekrar dene.", empty: "İşte istediğin sonuçlar 👇", unit_adet: "adet",
+        hist_title: "Sohbet geçmişi", hist_new: "＋ Yeni sohbet", hist_empty: "Henüz kayıtlı sohbet yok.",
+        hist_tip: "Sohbet geçmişi", hist_del: "Sohbeti sil", new_chat_title: "Yeni sohbet",
         dash_alerts: "Stok durumu (uyarılar)", dash_abc: "ABC dağılımı", dash_table: "Ürün tablosu",
         f_search: "🔍 Mağaza / ürün ara...", f_all_stores: "Tüm mağazalar", f_all_abc: "Tüm ABC", f_all_status: "Tüm durumlar",
         th_store: "Mağaza", th_product: "Ürün", th_revenue: "Yıllık ciro", th_reorder: "Reorder",
@@ -424,6 +467,8 @@
         crit_q: "List the critically low products",
         fu_label: "You could also ask:", copy: "📋 Copy", copied: "✓ Copied",
         err: "⚠️ Something went wrong, please try again in a moment.", empty: "Here are your results 👇", unit_adet: "units",
+        hist_title: "Chat history", hist_new: "＋ New chat", hist_empty: "No saved chats yet.",
+        hist_tip: "Chat history", hist_del: "Delete chat", new_chat_title: "New chat",
         dash_alerts: "Stock status (alerts)", dash_abc: "ABC distribution", dash_table: "Product table",
         f_search: "🔍 Search store / product...", f_all_stores: "All stores", f_all_abc: "All ABC", f_all_status: "All statuses",
         th_store: "Store", th_product: "Product", th_revenue: "Annual revenue", th_reorder: "Reorder",
@@ -477,6 +522,8 @@
       document.querySelectorAll("[data-i18n]").forEach(e => { const v = d[e.dataset.i18n]; if (v != null) e.textContent = v; });
       document.querySelectorAll("[data-i18n-ph]").forEach(e => { const v = d[e.dataset.i18nPh]; if (v != null) e.placeholder = v; });
       document.querySelectorAll("[data-i18n-html]").forEach(e => { const v = d[e.dataset.i18nHtml]; if (v != null) e.innerHTML = v; });
+      document.querySelectorAll("[data-i18n-title]").forEach(e => { const v = d[e.dataset.i18nTitle]; if (v != null) e.title = v; });
+      if (typeof renderChatList === "function") renderChatList();
       document.querySelectorAll(".es-card").forEach(c => { const v = d[c.dataset.qk]; if (v != null) c.dataset.q = v; });
       langBtn.textContent = LANG === "tr" ? "EN" : "TR";
       if (typeof lastKpi !== "undefined" && lastKpi) renderKpiStrip(lastKpi);
@@ -622,6 +669,8 @@
     // ---- Chat ----
     const chat = $("#chat"), input = $("#input"), send = $("#send");
     let history = [];
+    // Template of the initial empty-state, so "New chat" can restore it.
+    const EMPTY_HTML = ($("#emptyState") || {}).outerHTML || "";
 
     // Minimal, safe Markdown -> HTML (headings, bold, code, lists, tables).
     const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -739,7 +788,9 @@
       try {
         const res = await fetch(API + "/chat/stream", { method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message, history: history.slice(0, -1), lang: LANG }) });
+          body: JSON.stringify({ message,
+            history: history.slice(0, -1).map(m => ({ role: m.role, content: m.content })),
+            lang: LANG }) });
         if (!res.ok || !res.body) throw new Error("stream");
         const reader = res.body.getReader(), dec = new TextDecoder();
         let buf = "", started = false;
@@ -767,7 +818,9 @@
           cb.textContent = T("copied"); setTimeout(() => cb.textContent = T("copy"), 1500);
         });
         renderFollowups(followupsFor(meta && meta.tools_used));
-        history.push({ role: "assistant", content: answer });
+        history.push({ role: "assistant", content: answer,
+          chart: meta && meta.chart, tools: meta && meta.tools_used, sources: meta && meta.sources });
+        persistCurrent();
       } catch (e) {
         b.innerHTML = mdToHtml(T("err"));
       }
@@ -777,7 +830,121 @@
     send.onclick = submit;
     input.addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); } });
     input.addEventListener("input", () => { input.style.height = "auto"; input.style.height = Math.min(input.scrollHeight, 120) + "px"; });
-    document.querySelectorAll(".es-card").forEach(c => c.onclick = () => { input.value = c.dataset.q; submit(); });
+    function bindEsCards() {
+      document.querySelectorAll(".es-card").forEach(c => c.onclick = () => { input.value = c.dataset.q; submit(); });
+    }
+    bindEsCards();
+
+    // ---- Chat history archive (localStorage) ----
+    const CHATS_KEY = "dsi_chats";
+    let chats = (() => { try { return JSON.parse(localStorage.getItem(CHATS_KEY)) || []; } catch { return []; } })();
+    let curId = null;                     // id of the conversation being shown (null = fresh/new)
+    const saveChats = () => { try { localStorage.setItem(CHATS_KEY, JSON.stringify(chats)); } catch {} };
+    const newId = () => "c" + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36);
+    const titleFrom = msgs => {
+      const u = msgs.find(m => m.role === "user");
+      const t = (u ? u.content : "").replace(/\s+/g, " ").trim();
+      return t ? (t.length > 42 ? t.slice(0, 42) + "…" : t) : T("new_chat_title");
+    };
+    const fmtDate = ts => {
+      try {
+        return new Date(ts).toLocaleDateString(LANG === "tr" ? "tr-TR" : "en-US",
+          { day: "2-digit", month: "short", year: "numeric" });
+      } catch { return ""; }
+    };
+
+    // Persist the current conversation after each completed turn.
+    function persistCurrent() {
+      if (!history.length) return;
+      let c = chats.find(x => x.id === curId);
+      if (!c) { curId = newId(); c = { id: curId, title: "", ts: Date.now(), msgs: [] }; chats.unshift(c); }
+      c.msgs = history.map(m => ({ ...m }));
+      c.ts = Date.now();
+      c.title = titleFrom(history);
+      saveChats(); renderChatList();
+    }
+
+    function attachCopy(b, text) {
+      const cb = b.querySelector(".copy-btn");
+      if (cb) cb.onclick = () => navigator.clipboard.writeText(text).then(() => {
+        cb.textContent = T("copied"); setTimeout(() => cb.textContent = T("copy"), 1500);
+      });
+    }
+
+    // Re-render an entire conversation from stored messages.
+    function renderConversation(msgs) {
+      chat.innerHTML = "";
+      history = msgs.map(m => ({ ...m }));
+      for (const m of history) {
+        if (m.role === "user") { addMsg("user", m.content); continue; }
+        const b = addMsg("bot", "", true);
+        b.innerHTML = mdToHtml(m.content || "") + miniChart(m.chart) +
+          footer(m.sources) + badges(m.tools);
+        attachCopy(b, m.content || "");
+      }
+      const last = [...history].reverse().find(m => m.role === "assistant");
+      if (last) renderFollowups(followupsFor(last.tools));
+      scrollDown();
+    }
+
+    function showEmptyState() {
+      chat.innerHTML = EMPTY_HTML;
+      applyI18n(); bindEsCards();
+    }
+
+    // Start a fresh conversation (keeps the archive intact).
+    function startNewChat() {
+      curId = null; history = [];
+      chat.querySelectorAll(".followups").forEach(e => e.remove());
+      showEmptyState();
+      renderChatList();
+      closeDrawer();
+      input.focus();
+    }
+
+    function loadChat(id) {
+      const c = chats.find(x => x.id === id);
+      if (!c) return;
+      curId = id;
+      renderConversation(c.msgs || []);
+      renderChatList();
+      closeDrawer();
+    }
+
+    function deleteChat(id) {
+      chats = chats.filter(x => x.id !== id);
+      saveChats();
+      if (id === curId) startNewChat(); else renderChatList();
+    }
+
+    function renderChatList() {
+      const list = $("#chatList"); if (!list) return;
+      if (!chats.length) { list.innerHTML = `<div class="chat-empty">${esc(T("hist_empty"))}</div>`; return; }
+      list.innerHTML = chats.slice().sort((a, b) => b.ts - a.ts).map(c =>
+        `<div class="chat-item${c.id === curId ? " active" : ""}" data-id="${c.id}">
+           <div class="ci-main"><div class="ci-title">${esc(c.title || T("new_chat_title"))}</div>
+             <div class="ci-date">${esc(fmtDate(c.ts))}</div></div>
+           <button class="ci-del" data-id="${c.id}" title="${esc(T("hist_del"))}">🗑</button>
+         </div>`).join("");
+      list.querySelectorAll(".chat-item").forEach(el => el.onclick = e => {
+        if (e.target.closest(".ci-del")) return;
+        loadChat(el.dataset.id);
+      });
+      list.querySelectorAll(".ci-del").forEach(btn => btn.onclick = e => {
+        e.stopPropagation(); deleteChat(btn.dataset.id);
+      });
+    }
+
+    // Drawer open/close
+    const drawer = $("#histDrawer"), overlay = $("#histOverlay");
+    const openDrawer = () => { renderChatList(); drawer.classList.add("open"); overlay.classList.add("open"); };
+    const closeDrawer = () => { drawer.classList.remove("open"); overlay.classList.remove("open"); };
+    $("#histBtn").onclick = openDrawer;
+    $("#histClose").onclick = closeDrawer;
+    overlay.onclick = closeDrawer;
+    $("#newChat").onclick = startNewChat;
+    addEventListener("keydown", e => { if (e.key === "Escape") closeDrawer(); });
+    renderChatList();
 
     // Top KPI strip + automatic critical-stock banner
     let lastKpi = null;
