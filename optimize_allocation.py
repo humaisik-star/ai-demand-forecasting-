@@ -248,7 +248,7 @@ def _plot(out, path):
     top = out.sort_values("recommended_order", ascending=False).head(15)[::-1]
     labels = top["Store ID"] + "·" + top["Product ID"]
     fig, ax = plt.subplots(figsize=(10, 6))
-    ax.barh(labels, top["allocation"], color="#2f9e63", label="Optimised allocation")
+    ax.barh(labels, top["allocation"], color="#2563eb", label="Optimised allocation")
     ax.barh(labels, top["current_inventory"], color="#94a3b8", label="Current stock")
     ax.set_xlabel("Units")
     ax.set_title("Optimised stock allocation vs current — top reorder needs")
@@ -267,10 +267,10 @@ def _plot_sensitivity(sens, summary, path):
     infeas = [c for c in sens["curve"] if c["total_cost"] is None]
     bx = [c["budget"] / 1e6 for c in feas]
     fig, ax = plt.subplots(figsize=(9, 5))
-    ax.plot(bx, [c["total_cost"] / 1e6 for c in feas], "o-", color="#2f9e63",
+    ax.plot(bx, [c["total_cost"] / 1e6 for c in feas], "o-", color="#2563eb",
             label="Total expected cost (₺M)")
     ax.set_xlabel("Budget (₺M)")
-    ax.set_ylabel("Total expected cost (₺M)", color="#2f9e63")
+    ax.set_ylabel("Total expected cost (₺M)", color="#2563eb")
     ax.axvline(summary["min_feasible_budget"] / 1e6, ls="--", color="#e05a44",
                label="Feasibility floor")
     for c in infeas:

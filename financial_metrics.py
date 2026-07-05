@@ -151,7 +151,7 @@ def _plot(table, path):
     fig, ax = plt.subplots(figsize=(8, 5))
     x = np.arange(len(by_abc))
     ax.bar(x - 0.2, by_abc["revenue"] / 1e6, 0.4, label="Revenue (₺M)", color="#94a3b8")
-    ax.bar(x + 0.2, by_abc["gross_profit"] / 1e6, 0.4, label="Gross profit (₺M)", color="#2f9e63")
+    ax.bar(x + 0.2, by_abc["gross_profit"] / 1e6, 0.4, label="Gross profit (₺M)", color="#2563eb")
     ax.set_xticks(x)
     ax.set_xticklabels([f"Class {c}" for c in by_abc.index])
     ax.set_ylabel("₺ million")
