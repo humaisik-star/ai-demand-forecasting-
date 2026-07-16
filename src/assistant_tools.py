@@ -313,16 +313,27 @@ def set_client_orders(orders):
     _CLIENT_ORDERS = orders or []
 
 
+CRIT_DAYS = 2  # a SKU is critical if cover drops below this many days
+
+
+def recommended_order(row) -> int:
+    """Suggested order = max(0, (reorder point + EOQ) - current)."""
+    return int(max(0, round(row["reorder_point"] + row["EOQ"] - row["current_inventory"])))
+
+
 def _critical_rows():
+    """SKUs needing an order (one consistent rule): current below the reorder
+    point OR fewer than CRIT_DAYS days of cover, most urgent first."""
     inv = _inventory()
-    d = inv[inv["alert_status"].isin(["CRITICAL", "REORDER"])].copy()
-    d["_sev"] = (d["alert_status"] != "CRITICAL").astype(int)
-    return d.sort_values(["_sev", "days_of_cover"])
+    d = inv[(inv["current_inventory"] < inv["reorder_point"]) |
+            (inv["days_of_cover"] < CRIT_DAYS)].copy()
+    return d.sort_values("days_of_cover")
 
 
 def siparis_ver(top_n: int = 5, status: str = None,
                 store_id: str = None, product_id: str = None) -> dict:
-    """Place a replenishment order — mark critical/reorder SKUs as 'ordered'."""
+    """Place a replenishment order — mark critical SKUs as 'ordered' with an
+    auto-computed quantity."""
     d = _critical_rows()
     if store_id and product_id:
         d = d[(d["Store ID"] == store_id) & (d["Product ID"] == product_id)]
@@ -331,12 +342,15 @@ def siparis_ver(top_n: int = 5, status: str = None,
             d = d[d["alert_status"] == status.upper()]
         d = d.head(int(top_n))
     if d.empty:
-        return {"error": "Sipariş verilecek uygun kritik/reorder ürün bulunamadı."}
-    skus = [{"store_id": r["Store ID"], "product_id": r["Product ID"]} for _, r in d.iterrows()]
-    items = d[["Store ID", "Product ID", "abc_class", "alert_status",
-               "current_inventory", "days_of_cover"]].to_dict("records")
+        return {"error": "Sipariş verilecek uygun kritik ürün bulunamadı."}
+    skus = [{"store_id": r["Store ID"], "product_id": r["Product ID"],
+             "qty": recommended_order(r)} for _, r in d.iterrows()]
+    items = [{"Store ID": r["Store ID"], "Product ID": r["Product ID"], "abc_class": r["abc_class"],
+              "current_inventory": r["current_inventory"], "reorder_point": round(r["reorder_point"]),
+              "days_of_cover": r["days_of_cover"], "recommended_order": recommended_order(r)}
+             for _, r in d.iterrows()]
     return {"action": {"op": "mark", "skus": skus}, "count": len(skus), "items": items,
-            "note": f"{len(skus)} ürün 'sipariş verildi' olarak işaretlendi."}
+            "note": f"{len(skus)} ürün önerilen miktarla 'sipariş verildi' olarak işaretlendi."}
 
 
 def siparis_geri_al(store_id: str = None, product_id: str = None, hepsi: bool = False) -> dict:

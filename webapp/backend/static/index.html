@@ -195,6 +195,14 @@
     .ui-btn.primary:hover { background: var(--accent-2); color: #fff; }
     .ui-btn.danger { background: var(--crit); border-color: var(--crit); color: #fff; }
     .ui-btn.danger:hover { filter: brightness(1.08); color: #fff; }
+    /* Order-quantity modal */
+    .ord-qty-label { display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      font-size: 13.5px; font-weight: 600; margin-bottom: 6px; }
+    .ord-qty-input { width: 130px; background: var(--surface); color: var(--text); border: 1px solid var(--ui-border);
+      border-radius: var(--ui-radius); padding: 9px 12px; font-size: 14px; font-family: var(--font); text-align: right; }
+    .ord-qty-input:focus { outline: none; border-color: var(--primary); }
+    .ord-qty-hint { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+    .ord-qty-err { font-size: 12.5px; color: var(--crit); min-height: 18px; margin-bottom: 12px; font-weight: 600; }
     /* Overflow "⋯" menu (secondary actions) */
     .menu-wrap { position: relative; }
     .menu-panel { position: absolute; top: 46px; right: 0; min-width: 190px; background: var(--surface);
@@ -560,7 +568,6 @@
       <div class="filters">
         <input id="ordSearch" data-i18n-ph="f_search" placeholder="🔍 Mağaza / ürün ara..." />
         <select id="ordStore"><option value="" data-i18n="f_all_stores">Tüm mağazalar</option></select>
-        <select id="ordStatus"><option value="" data-i18n="f_all_status">Tüm durumlar</option><option>CRITICAL</option><option>REORDER</option></select>
       </div>
       <div id="ordBody"></div>
     </section>
@@ -624,6 +631,9 @@
         ord_place_sel: "Seçilenlere sipariş ver", ord_undo_sel: "Seçilenleri geri al", ord_when: "Sipariş zamanı",
         ord_none: "Kayıt yok", ord_placed_ok: "Sipariş verildi ✓", ord_placed_n: "ürüne sipariş verildi",
         ord_undone_n: "sipariş geri alındı", ord_sel_count: "seçili", notif_manage: "🧾 Stok yönetimini aç",
+        ord_reorder: "Reorder", ord_rec: "Önerilen", ord_qty: "Miktar", ord_qty_max: "Üst sınır",
+        crit_reason_reorder: "Mevcut, reorder noktasının altında", crit_reason_days: "Öngörülen kapsama 2 günün altında",
+        ord_err_empty: "Miktar girin.", ord_err_pos: "Miktar pozitif bir tam sayı olmalı.", ord_err_max: "Miktar yıllık talebi aşamaz.",
         pdf_btn: "📄 PDF rapor",
         es_desc: "Talep tahmini, stok politikası ve envanter kavramlarını doğal dille sor. Başlamak için bir örnek seç:",
         card1_t: "📋 Yönetici özeti", card1_s: "KPI'lar + öncelikli aksiyonlar", card1_q: "Yönetici özeti ver",
@@ -680,6 +690,9 @@
         ord_place_sel: "Order selected", ord_undo_sel: "Undo selected", ord_when: "Ordered at",
         ord_none: "Nothing here", ord_placed_ok: "Order placed ✓", ord_placed_n: "items ordered",
         ord_undone_n: "orders undone", ord_sel_count: "selected", notif_manage: "🧾 Open stock management",
+        ord_reorder: "Reorder", ord_rec: "Suggested", ord_qty: "Quantity", ord_qty_max: "Max",
+        crit_reason_reorder: "Current stock is below the reorder point", crit_reason_days: "Under 2 days of cover",
+        ord_err_empty: "Enter a quantity.", ord_err_pos: "Quantity must be a positive integer.", ord_err_max: "Quantity can't exceed annual demand.",
         pdf_btn: "📄 PDF report",
         es_desc: "Ask about demand forecasts, stock policy and inventory concepts in plain language. Pick an example to start:",
         card1_t: "📋 Executive summary", card1_s: "KPIs + priority actions", card1_q: "Give an executive summary",
@@ -1322,30 +1335,43 @@
     const bellBtn = $("#bellBtn"), bellBadge = $("#bellBadge"), notifPanel = $("#notifPanel");
     let notifRows = [];
 
-    // ---- Shared order state: skuKey -> timestamp(ms). Persisted in localStorage. ----
+    // ---- Shared order state: skuKey -> {ts, qty}. Persisted in localStorage. ----
     const ORDERED_KEY = "dsi_ordered";
     let orders = (() => {
       try {
         const raw = JSON.parse(localStorage.getItem(ORDERED_KEY));
-        if (Array.isArray(raw)) { const o = {}; raw.forEach(k => o[k] = Date.now()); return o; } // migrate old Set
-        return (raw && typeof raw === "object") ? raw : {};
+        const o = {};
+        if (Array.isArray(raw)) raw.forEach(k => o[k] = { ts: Date.now(), qty: null });          // old Set
+        else if (raw && typeof raw === "object") for (const k in raw) {
+          const v = raw[k]; o[k] = (typeof v === "number") ? { ts: v, qty: null } : v;            // old ts / new obj
+        }
+        return o;
       } catch { return {}; }
     })();
     const skuKey = r => `${r["Store ID"]}|${r["Product ID"]}`;
     const isOrdered = k => Object.prototype.hasOwnProperty.call(orders, k);
+
+    // One consistent critical rule everywhere: below the reorder point OR under CRIT_DAYS cover.
+    const CRIT_DAYS = 2;
+    const needsOrder = r => r.current_inventory < r.reorder_point || r.days_of_cover < CRIT_DAYS;
+    // Suggested quantity = max(0, (reorder point + EOQ) - current).
+    const recommendedQty = r => Math.max(0, Math.round(r.reorder_point + r.EOQ - r.current_inventory));
+    const maxQty = r => Math.max(1, Math.round(r.avg_daily_demand * 365));   // annual demand ceiling
+    const critReason = r => r.current_inventory < r.reorder_point ? T("crit_reason_reorder") : T("crit_reason_days");
+
     const saveOrders = () => { try { localStorage.setItem(ORDERED_KEY, JSON.stringify(orders)); } catch {} };
-    function markOrdered(k, ts) { if (!isOrdered(k)) orders[k] = ts || Date.now(); }
+    function markOrdered(k, qty) { if (!isOrdered(k)) orders[k] = { ts: Date.now(), qty: qty != null ? qty : null }; }
     function unmarkOrdered(k) { delete orders[k]; }
     function afterOrdersChange() { saveOrders(); refreshBadge(); renderNotif(); renderOrders(); }
     const ordersForApi = () => Object.keys(orders).map(k => {
-      const [s, p] = k.split("|"); return { store_id: s, product_id: p, ts: orders[k] };
+      const [s, p] = k.split("|"); return { store_id: s, product_id: p, ts: orders[k].ts, qty: orders[k].qty };
     });
 
     function refreshBadge() {
-      // Badge = pending (not-yet-ordered) CRITICAL SKUs.
+      // Badge = pending (not-yet-ordered) critical SKUs — same set as the Active tab.
       const n = notifRows.length
-        ? notifRows.filter(r => r.alert_status === "CRITICAL" && !isOrdered(skuKey(r))).length
-        : ((lastKpi && lastKpi.critical_alerts) || 0);
+        ? notifRows.filter(r => !isOrdered(skuKey(r))).length
+        : ((lastKpi && lastKpi.reorder_alerts) || 0);
       if (n > 0) { bellBadge.textContent = n > 99 ? "99+" : n; bellBadge.style.display = ""; }
       else bellBadge.style.display = "none";
     }
@@ -1360,18 +1386,16 @@
       body.innerHTML = pending.length
         ? pending.slice(0, 40).map(r => `<div class="notif-item"><div class="ni-main">
              <b>${esc(r["Store ID"])} · ${esc(r["Product ID"])}</b>
-             <span class="ni-sub">${esc(T("th_current"))}: ${fmt(r.current_inventory)} · ${esc(T("th_days"))}: ${r.days_of_cover}</span>
-           </div><span class="pill ${r.alert_status}">${r.alert_status}</span></div>`).join("")
+             <span class="ni-sub">${esc(T("th_current"))}: ${fmt(r.current_inventory)} · ${esc(T("ord_reorder"))}: ${fmt(Math.round(r.reorder_point))} · ${esc(T("th_days"))}: ${r.days_of_cover}</span>
+           </div><span class="pill CRITICAL" data-tip="${esc(critReason(r))}">CRITICAL</span></div>`).join("")
         : `<div class="notif-empty">${esc(T("notif_empty"))}</div>`;
       refreshBadge();
     }
     async function loadNotif() {
       try {
         const rows = (await (await fetch(API + "/api/inventory")).json()).rows || [];
-        notifRows = rows.filter(r => r.alert_status === "CRITICAL" || r.alert_status === "REORDER")
-          .sort((a, b) => a.alert_status === b.alert_status
-            ? a.days_of_cover - b.days_of_cover
-            : (a.alert_status === "CRITICAL" ? -1 : 1));
+        // Active-critical set — one rule, so the counter and the table always match.
+        notifRows = rows.filter(needsOrder).sort((a, b) => a.days_of_cover - b.days_of_cover);
       } catch { notifRows = []; }
       renderNotif(); renderOrders();
     }
@@ -1398,12 +1422,13 @@
           { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
       } catch { return ""; }
     };
+    const rowByKey = k => notifRows.find(r => skuKey(r) === k);
     function ordFiltered() {
       const q = ($("#ordSearch") ? $("#ordSearch").value : "").toLowerCase();
-      const st = $("#ordStore") ? $("#ordStore").value : "", stat = $("#ordStatus") ? $("#ordStatus").value : "";
+      const st = $("#ordStore") ? $("#ordStore").value : "";
       return notifRows.filter(r =>
         (!q || (r["Store ID"] + r["Product ID"]).toLowerCase().includes(q)) &&
-        (!st || r["Store ID"] === st) && (!stat || r.alert_status === stat));
+        (!st || r["Store ID"] === st));
     }
     let ordWired = false;
     function renderOrders() {
@@ -1417,12 +1442,13 @@
         } else if (store.options[0]) store.options[0].textContent = T("f_all_stores");
         if (store._uiSync) store._uiSync();
       }
+      // Counters use the full (unfiltered) sets so they always equal the bell badge.
       const totActive = notifRows.filter(r => !isOrdered(skuKey(r))).length;
       const totOrdered = notifRows.filter(r => isOrdered(skuKey(r))).length;
       if ($("#ordActiveCount")) $("#ordActiveCount").textContent = totActive;
       if ($("#ordOrderedCount")) $("#ordOrderedCount").textContent = totOrdered;
       if (!ordWired) {
-        ["ordSearch", "ordStore", "ordStatus"].forEach(id => { const el = $("#" + id); if (el) el.addEventListener("input", renderOrders); });
+        ["ordSearch", "ordStore"].forEach(id => { const el = $("#" + id); if (el) el.addEventListener("input", renderOrders); });
         document.querySelectorAll(".ord-subtab").forEach(b => b.onclick = () => {
           document.querySelectorAll(".ord-subtab").forEach(x => x.classList.remove("active"));
           b.classList.add("active"); ordSub = b.dataset.sub; renderOrders();
@@ -1436,31 +1462,37 @@
       const bulkBtn = ordSub === "active"
         ? `<button class="ord-act" id="ordBulkAct" disabled>${T("ord_place_sel")}</button>`
         : `<button class="ord-act ghost" id="ordBulkAct" disabled>${T("ord_undo_sel")}</button>`;
-      let head, tbody;
+      const critPill = r =>
+        `<span class="pill CRITICAL" data-tip="${esc(critReason(r))}">CRITICAL</span>`;
+      let head, tbody, colspan;
       if (ordSub === "active") {
+        colspan = 9;
         head = `<tr><th class="sel"><input type="checkbox" id="ordAll"></th>
           <th>${T("th_store")}</th><th>${T("th_product")}</th><th class="num">${T("th_current")}</th>
-          <th class="num">${T("th_days")}</th><th>${T("th_status")}</th><th>ABC</th><th></th></tr>`;
+          <th class="num">${T("ord_reorder")}</th><th class="num">${T("th_days")}</th>
+          <th class="num">${T("ord_rec")}</th><th>${T("th_status")}</th><th>ABC</th><th></th></tr>`;
         tbody = rows.map(r => { const k = skuKey(r); return `<tr data-key="${esc(k)}">
           <td class="sel"><input type="checkbox" class="ord-cb" data-key="${esc(k)}"></td>
           <td>${esc(r["Store ID"])}</td><td>${esc(r["Product ID"])}</td>
-          <td class="num">${fmt(r.current_inventory)}</td><td class="num">${r.days_of_cover}</td>
-          <td><span class="pill ${r.alert_status}">${r.alert_status}</span></td>
-          <td><span class="pill ${r.abc_class}">${r.abc_class}</span></td>
+          <td class="num">${fmt(r.current_inventory)}</td>
+          <td class="num">${fmt(Math.round(r.reorder_point))}</td>
+          <td class="num">${r.days_of_cover}</td>
+          <td class="num"><b>${fmt(recommendedQty(r))}</b></td>
+          <td>${critPill(r)}</td><td><span class="pill ${r.abc_class}">${r.abc_class}</span></td>
           <td><button class="ord-inline" data-key="${esc(k)}" data-op="mark">${T("ord_place")}</button></td></tr>`; }).join("");
       } else {
+        colspan = 8;
         head = `<tr><th class="sel"><input type="checkbox" id="ordAll"></th>
-          <th>${T("th_store")}</th><th>${T("th_product")}</th><th>${T("ord_when")}</th>
-          <th>${T("th_status")}</th><th>ABC</th><th></th></tr>`;
-        tbody = rows.map(r => { const k = skuKey(r); return `<tr data-key="${esc(k)}">
+          <th>${T("th_store")}</th><th>${T("th_product")}</th><th class="num">${T("ord_qty")}</th>
+          <th>${T("ord_when")}</th><th>${T("th_status")}</th><th>ABC</th><th></th></tr>`;
+        tbody = rows.map(r => { const k = skuKey(r), o = orders[k] || {}; return `<tr data-key="${esc(k)}">
           <td class="sel"><input type="checkbox" class="ord-cb" data-key="${esc(k)}"></td>
           <td>${esc(r["Store ID"])}</td><td>${esc(r["Product ID"])}</td>
-          <td>${esc(fmtDateTime(orders[k]))}</td>
-          <td><span class="pill ${r.alert_status}">${r.alert_status}</span></td>
-          <td><span class="pill ${r.abc_class}">${r.abc_class}</span></td>
+          <td class="num">${o.qty != null ? fmt(o.qty) : "–"}</td>
+          <td>${esc(fmtDateTime(o.ts))}</td>
+          <td>${critPill(r)}</td><td><span class="pill ${r.abc_class}">${r.abc_class}</span></td>
           <td><button class="ord-inline undo" data-key="${esc(k)}" data-op="unmark">↩ ${T("notif_undo")}</button></td></tr>`; }).join("");
       }
-      const colspan = ordSub === "active" ? 8 : 7;
       body.innerHTML = `<div class="ord-bulk"><span class="muted" id="ordSel"></span>${bulkBtn}</div>
         <div class="tablewrap"><table id="ordTable"><thead>${head}</thead>
         <tbody>${tbody || `<tr><td colspan="${colspan}" class="ord-empty">${T("ord_none")}</td></tr>`}</tbody></table></div>`;
@@ -1468,24 +1500,67 @@
       const upSel = () => {
         const n = document.querySelectorAll("#ordTable .ord-cb:checked").length;
         $("#ordSel").textContent = n ? `${n} ${T("ord_sel_count")}` : "";
-        $("#ordBulkAct").disabled = !n;
+        $("#ordBulkAct").disabled = !n;                          // no selection -> button passive
       };
       const allBox = $("#ordAll");
       if (allBox) allBox.onchange = () => { document.querySelectorAll("#ordTable .ord-cb").forEach(cb => cb.checked = allBox.checked); upSel(); };
       document.querySelectorAll("#ordTable .ord-cb").forEach(cb => cb.onchange = upSel);
-      document.querySelectorAll("#ordTable .ord-inline").forEach(btn => btn.onclick = () => {
+      document.querySelectorAll("#ordTable .ord-inline").forEach(btn => btn.onclick = async () => {
         const k = btn.dataset.key;
-        if (btn.dataset.op === "mark") { markOrdered(k); afterOrdersChange(); toastOrdered(k); }
-        else { unmarkOrdered(k); afterOrdersChange(); }
+        if (btn.dataset.op === "mark") {
+          const r = rowByKey(k); if (!r) return;
+          const qty = await askQty(r);                           // modal: recommended, editable, validated
+          if (qty == null) return;                               // cancelled
+          markOrdered(k, qty); afterOrdersChange(); toastOrdered(k);
+        } else { unmarkOrdered(k); afterOrdersChange(); }
       });
       const bulk = $("#ordBulkAct");
       if (bulk) bulk.onclick = () => {
         const keys = [...document.querySelectorAll("#ordTable .ord-cb:checked")].map(cb => cb.dataset.key);
         if (!keys.length) return;
-        if (ordSub === "active") { keys.forEach(markOrdered); toast(`${keys.length} ${T("ord_placed_n")}`); }
-        else { keys.forEach(unmarkOrdered); toast(`${keys.length} ${T("ord_undone_n")}`); }
+        if (ordSub === "active") {
+          keys.forEach(k => { const r = rowByKey(k); markOrdered(k, r ? recommendedQty(r) : null); });
+          toast(`${keys.length} ${T("ord_placed_n")}`);
+        } else { keys.forEach(unmarkOrdered); toast(`${keys.length} ${T("ord_undone_n")}`); }
         afterOrdersChange();
       };
+    }
+
+    // Order-quantity modal: prefilled with the recommended qty, editable, validated
+    // (must be a positive integer, not exceeding annual demand). Returns qty or null.
+    function askQty(r) {
+      const rec = recommendedQty(r), mx = maxQty(r);
+      return new Promise(resolve => {
+        uiModal.innerHTML = `<div class="ui-modal" role="dialog" aria-modal="true">
+          <h3>${esc(T("ord_place"))}</h3>
+          <p>${esc(r["Store ID"])} · ${esc(r["Product ID"])} — ${esc(T("th_current"))}: ${fmt(r.current_inventory)} · ${esc(T("ord_reorder"))}: ${fmt(Math.round(r.reorder_point))}</p>
+          <label class="ord-qty-label">${esc(T("ord_qty"))}
+            <input type="number" id="ordQty" class="ord-qty-input" min="1" max="${mx}" step="1" value="${rec}"></label>
+          <div class="ord-qty-hint">${esc(T("ord_rec"))}: <b>${fmt(rec)}</b> · ${esc(T("ord_qty_max"))}: ${fmt(mx)}</div>
+          <div class="ord-qty-err" id="ordQtyErr"></div>
+          <div class="ui-modal-actions">
+            <button class="ui-btn" data-r="0">${esc(T("ui_cancel"))}</button>
+            <button class="ui-btn primary" id="ordQtyOk">${esc(T("ui_ok"))}</button>
+          </div></div>`;
+        const inp = $("#ordQty"), okBtn = $("#ordQtyOk"), err = $("#ordQtyErr");
+        const validate = () => {
+          const v = Number(inp.value); let msg = "";
+          if (inp.value === "" || !Number.isFinite(v)) msg = T("ord_err_empty");
+          else if (!Number.isInteger(v) || v <= 0) msg = T("ord_err_pos");
+          else if (v > mx) msg = T("ord_err_max");
+          err.textContent = msg; okBtn.disabled = !!msg;         // empty/invalid -> button passive
+          return msg ? null : v;
+        };
+        const done = v => { uiModal.classList.remove("open"); document.removeEventListener("keydown", onKey); resolve(v); };
+        function onKey(e) { if (e.key === "Escape") done(null); else if (e.key === "Enter") { const v = validate(); if (v != null) done(v); } }
+        inp.oninput = validate;
+        okBtn.onclick = () => { const v = validate(); if (v != null) done(v); };
+        uiModal.querySelector('[data-r="0"]').onclick = () => done(null);
+        uiModal.onclick = e => { if (e.target === uiModal) done(null); };
+        document.addEventListener("keydown", onKey);
+        uiModal.classList.add("open"); validate();
+        setTimeout(() => { inp.focus(); inp.select(); }, 40);
+      });
     }
 
     // Toast with optional one-click undo.
@@ -1502,7 +1577,11 @@
     // Apply an agent action returned by the chatbot to the shared order state.
     function applyOrderAction(a) {
       if (!a) return;
-      if (a.op === "mark" && a.skus) { a.skus.forEach(s => markOrdered(`${s.store_id}|${s.product_id}`)); afterOrdersChange(); toast(`${a.skus.length} ${T("ord_placed_n")}`); }
+      if (a.op === "mark" && a.skus) {
+        a.skus.forEach(s => { const k = `${s.store_id}|${s.product_id}`, r = rowByKey(k);
+          markOrdered(k, s.qty != null ? s.qty : (r ? recommendedQty(r) : null)); });
+        afterOrdersChange(); toast(`${a.skus.length} ${T("ord_placed_n")}`);
+      }
       else if (a.op === "unmark") {
         if (a.all) { orders = {}; afterOrdersChange(); }
         else if (a.skus) { a.skus.forEach(s => unmarkOrdered(`${s.store_id}|${s.product_id}`)); afterOrdersChange(); }
