@@ -455,7 +455,6 @@
         <div class="inputrow">
           <textarea id="input" rows="1" data-i18n-ph="input_ph" placeholder="Talep, stok, ABC, EOQ hakkında sor..."></textarea>
           <button id="micBtn" class="io-btn" data-i18n-title="mic_tip" title="Sesle sor">🎤</button>
-          <button id="ttsBtn" class="io-btn" title="Sesli okuma">🔊</button>
           <button id="send" data-i18n="send">Gönder</button>
         </div>
       </div>
@@ -579,7 +578,6 @@
         card4_t: "🚨 Anomaliler", card4_s: "tespit + açıklama", card4_q: "Anomalileri açıkla",
         input_ph: "Talep, stok, ABC, EOQ hakkında sor...", send: "Gönder",
         mic_tip: "Sesle sor", mic_listening: "Dinleniyor… (durdurmak için tıkla)",
-        tts_on: "Sesli okuma: açık", tts_off: "Sesli okuma: kapalı",
         mic_unsupported: "Tarayıcınız sesli girişi desteklemiyor.",
         kpi_reduction: "Stok azaltımı", kpi_service: "Hizmet seviyesi", kpi_records: "veri kaydı",
         d_skus: "Toplam SKU", d_skus_s: "ürün serisi", d_acc: "Model doğruluğu", d_acc_s: "held-out test",
@@ -635,7 +633,6 @@
         card4_t: "🚨 Anomalies", card4_s: "detection + explanation", card4_q: "Explain the anomalies",
         input_ph: "Ask about demand, stock, ABC, EOQ...", send: "Send",
         mic_tip: "Ask by voice", mic_listening: "Listening… (click to stop)",
-        tts_on: "Read aloud: on", tts_off: "Read aloud: off",
         mic_unsupported: "Your browser does not support voice input.",
         kpi_reduction: "Inventory cut", kpi_service: "Service level", kpi_records: "data records",
         d_skus: "Total SKUs", d_skus_s: "product series", d_acc: "Model accuracy", d_acc_s: "held-out test",
@@ -719,7 +716,6 @@
       document.querySelectorAll("[data-i18n-title]").forEach(e => { const v = d[e.dataset.i18nTitle]; if (v != null) e.title = v; });
       if (typeof renderChatList === "function") renderChatList();
       if (typeof renderNotif === "function") renderNotif();
-      if (typeof refreshTts === "function") refreshTts();
       document.querySelectorAll(".es-card").forEach(c => { const v = d[c.dataset.qk]; if (v != null) c.dataset.q = v; });
       langBtn.textContent = LANG === "tr" ? "EN" : "TR";
       if (typeof dashLoaded !== "undefined" && dashLoaded) {
@@ -1095,7 +1091,6 @@
         });
         renderFollowups(meta && meta.offtopic ? [] : followupsFor(meta && meta.tools_used));
         if (meta && meta.action) applyOrderAction(meta.action);
-        speak(answer);
         history.push({ role: "assistant", content: answer,
           chart: meta && meta.chart, tools: meta && meta.tools_used, sources: meta && meta.sources });
         persistCurrent();
@@ -1109,11 +1104,9 @@
     input.addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); } });
     input.addEventListener("input", () => { input.style.height = "auto"; input.style.height = Math.min(input.scrollHeight, 120) + "px"; });
 
-    // ---- Voice assistant (browser Web Speech API, no external service) ----
-    const micBtn = $("#micBtn"), ttsBtn = $("#ttsBtn");
-    const bcp47 = () => (LANG === "tr" ? "tr-TR" : "en-US");
-
-    // Speech-to-text: dictate a question, then send it.
+    // ---- Voice input (browser Web Speech API, no external service) ----
+    // Speech-to-text only: dictate a question, then send it.
+    const micBtn = $("#micBtn");
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     let recog = null, listening = false;
     if (SR) {
@@ -1128,8 +1121,7 @@
       recog.onerror = () => { listening = false; micBtn.classList.remove("listening"); micBtn.title = T("mic_tip"); };
       micBtn.onclick = () => {
         if (listening) { recog.stop(); return; }
-        if (window.speechSynthesis) window.speechSynthesis.cancel();  // don't record our own voice
-        recog.lang = bcp47();
+        recog.lang = LANG === "tr" ? "tr-TR" : "en-US";
         try { recog.start(); listening = true; micBtn.classList.add("listening"); micBtn.title = T("mic_listening"); }
         catch {}
       };
@@ -1137,42 +1129,6 @@
       micBtn.disabled = true; micBtn.style.display = "none";  // unsupported browser
     }
 
-    // Text-to-speech: read answers aloud, toggleable and persisted.
-    const canTTS = "speechSynthesis" in window;
-    let ttsOn = canTTS && localStorage.getItem("tts") === "1";
-    function stripForSpeech(md) {
-      return (md || "")
-        .split("\n")
-        .filter(l => (l.match(/\|/g) || []).length < 2)          // skip table rows
-        .join(". ")
-        .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")                 // links -> label
-        .replace(/[*`#>_~]/g, "")
-        .replace(/\s+/g, " ")
-        .trim()
-        .slice(0, 1000);
-    }
-    function speak(text) {
-      if (!ttsOn || !canTTS) return;
-      const clean = stripForSpeech(text);
-      if (!clean) return;
-      window.speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance(clean);
-      u.lang = bcp47();
-      window.speechSynthesis.speak(u);
-    }
-    function refreshTts() {
-      ttsBtn.textContent = ttsOn ? "🔊" : "🔇";
-      ttsBtn.classList.toggle("off", !ttsOn);
-      ttsBtn.title = T(ttsOn ? "tts_on" : "tts_off");
-    }
-    if (!canTTS) { ttsBtn.disabled = true; ttsBtn.style.display = "none"; }
-    ttsBtn.onclick = () => {
-      ttsOn = !ttsOn;
-      localStorage.setItem("tts", ttsOn ? "1" : "0");
-      if (!ttsOn && canTTS) window.speechSynthesis.cancel();
-      refreshTts();
-    };
-    refreshTts();
     function bindEsCards() {
       document.querySelectorAll(".es-card").forEach(c => c.onclick = () => { input.value = c.dataset.q; submit(); });
     }
